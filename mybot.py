@@ -8,19 +8,19 @@ from telegram.ext import (
 )
 from openai import OpenAI
 
-# ================== ENV VARIABLES ==================
+# ================== ENV ==================
 TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-QUIZ_INTERVAL = 600  # 10 minutes
+QUIZ_INTERVAL = 600  # 10 mins
 
-# ================== DATA STORAGE ==================
+# ================== DATA ==================
 if os.path.exists("data.json"):
     with open("data.json", "r") as f:
         data = json.load(f)
 else:
     data = {"warns": {}, "points": {}, "quiz": {}}
 
-# ================== BAD WORD LIST ==================
+# ================== BAD WORDS ==================
 BAD = [
     "sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
     "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
@@ -57,16 +57,23 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         msg = await update.message.reply_text(text)
         asyncio.create_task(auto_delete(msg))
 
-# ================== BAD WORD FILTER ==================
+# ================== FILTER BAD WORDS ==================
 async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
     text = update.message.text.lower()
     user = update.message.from_user
-    chat_id = update.effective_chat.id
+    chat = update.effective_chat
     user_id = str(user.id)
 
-    admins = [admin.user.id for admin in await context.bot.get_chat_administrators(chat_id)]
+    # Only get admins in groups/supergroups
+    admins = []
+    if chat.type in ["group", "supergroup"]:
+        try:
+            admins = [a.user.id for a in await context.bot.get_chat_administrators(chat.id)]
+        except:
+            admins = []
+
     if user.id in admins:
         if any(bad in text for bad in BAD):
             await update.message.delete()
@@ -90,14 +97,13 @@ async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         asyncio.create_task(auto_delete(msg))
 
-        if warns >= 3:
-            await context.bot.ban_chat_member(chat_id, user.id)
+        if warns >= 3 and chat.type in ["group", "supergroup"]:
+            await context.bot.ban_chat_member(chat.id, user.id)
             ban_msg = await update.message.reply_text(f"🚫 {user.first_name} banned after 3 warns!")
             asyncio.create_task(auto_delete(ban_msg))
 
         with open("data.json", "w") as f:
             json.dump(data, f)
-        return
 
 # ================== REMOVE WARN BUTTON ==================
 async def remove_warn_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -105,7 +111,12 @@ async def remove_warn_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     await query.answer()
     user_id = query.data.split("_")[1]
 
-    admins = [admin.user.id for admin in await context.bot.get_chat_administrators(update.effective_chat.id)]
+    chat = update.effective_chat
+    if chat.type not in ["group", "supergroup"]:
+        await query.edit_message_text("❌ This command only works in groups.")
+        return
+
+    admins = [a.user.id for a in await context.bot.get_chat_administrators(chat.id)]
     if update.effective_user.id not in admins:
         await query.edit_message_text("❌ Only admins can remove warns!")
         return
@@ -115,51 +126,57 @@ async def remove_warn_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         json.dump(data, f)
     await query.edit_message_text("✅ Warn removed!")
 
-# ================== OPENAI AI CHAT ==================
+# ================== OPENAI CHAT ==================
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.text:
+async def ai_chat_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
         return
-    prompt = update.message.text
+    prompt = " ".join(context.args) if context.args else update.message.text
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     await update.message.reply_text(response.choices[0].message["content"])
 
-# ================== QUIZ SYSTEM ==================
+# ================== QUIZ ==================
+async def start_quiz_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    if str(chat.id) in data["quiz"]:
+        await update.message.reply_text("❌ Quiz already running in this chat.")
+        return
+
+    question = "🤖 Quiz Question: What is 2+2?"
+    answer = "4"
+    data["quiz"][str(chat.id)] = answer
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+    await update.message.reply_text(f"{question}\nAnswer in chat. ✅ Q&A will not delete.")
+
 async def quiz_job(context: ContextTypes.DEFAULT_TYPE):
-    for chat_id_str in data.get("quiz", {}):
+    for chat_id_str in list(data.get("quiz", {})):
         chat_id = int(chat_id_str)
         question = "🤖 Quiz Question: What is 2+2?"
         answer = "4"
-        data["quiz"][str(chat_id)] = answer
+        data["quiz"][chat_id_str] = answer
         with open("data.json", "w") as f:
             json.dump(data, f)
         await context.bot.send_message(chat_id, f"{question}\nAnswer in chat. ✅ Q&A will not delete.")
 
 async def check_quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.text:
-        return
-    chat_id = update.effective_chat.id
+    chat_id = str(update.effective_chat.id)
     user_id = str(update.message.from_user.id)
-    if str(chat_id) not in data["quiz"]:
+    if chat_id not in data.get("quiz", {}):
         return
-
-    correct = data["quiz"][str(chat_id)]
+    correct = data["quiz"][chat_id]
     if update.message.text.strip().lower() == correct.lower():
         if user_id not in data["points"]:
             data["points"][user_id] = {"daily":0,"weekly":0,"overall":0}
         data["points"][user_id]["daily"] += 1
         data["points"][user_id]["weekly"] += 1
         data["points"][user_id]["overall"] += 1
-
-        with open("data.json", "w") as f:
-            json.dump(data, f)
-
         await update.message.reply_text(f"✅ Correct answer by {update.message.from_user.first_name}!")
-        del data["quiz"][str(chat_id)]
+        del data["quiz"][chat_id]
         with open("data.json", "w") as f:
             json.dump(data, f)
 
@@ -171,13 +188,19 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, filter_bad))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_quiz_answer))
+
+    # Commands
+    app.add_handler(CommandHandler("ai", ai_chat_cmd))
+    app.add_handler(CommandHandler("startquiz", start_quiz_cmd))
+
+    # Remove warn button
     app.add_handler(CallbackQueryHandler(remove_warn_callback, pattern=r"removewarn_"))
 
-    # Start repeating quiz job
+    # Quiz repeating
     app.job_queue.run_repeating(quiz_job, interval=QUIZ_INTERVAL, first=10)
 
     print("🔥 PRO MAX LEGEND BOT STARTED 🔥")
-    app.run_polling()  # ✅ Proper way in PTB v20+ to start bot
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
