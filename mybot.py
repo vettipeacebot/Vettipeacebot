@@ -8,6 +8,7 @@ from telegram.ext import (
 )
 from openai import OpenAI
 
+# ================= ENV =================
 TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
@@ -18,7 +19,10 @@ if os.path.exists("data.json"):
     with open("data.json", "r") as f:
         data = json.load(f)
 else:
-    data = {"warns": {}}
+    data = {
+        "warns": {},
+        "memory": {}
+    }
 
 # ================= BAD WORDS =================
 BAD = [
@@ -27,7 +31,6 @@ BAD = [
     "pm","dm","private chat","private message","direct chat","direct message",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity","inbox","thevidya","ummbu","gommala","ommala","kotta","badu","pvrt","ummbi","thayali","aatha","otha"
 ]
-       
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=180):
     await asyncio.sleep(delay)
@@ -74,9 +77,17 @@ async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     user_id = str(user.id)
 
-    if await is_admin(update, context):
+    # allow "admin" word
+    if "admin" in text:
         return
 
+    # admin → only delete
+    if await is_admin(update, context):
+        if any(word in text for word in BAD):
+            await update.message.delete()
+        return
+
+    # member
     if any(word in text for word in BAD):
         await update.message.delete()
 
@@ -85,7 +96,7 @@ async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
         msg = await update.message.reply_text(
-            f"⚠️ {user.first_name} warned\nReason: against group rules\nTotal: {warns}",
+            f"⚠️ {user.first_name} warned\nReason: against group rules\nTotal warns: {warns}",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         asyncio.create_task(auto_delete(msg))
@@ -117,28 +128,80 @@ async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ================= AI =================
 async def ai(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not context.args:
-        return await update.message.reply_text("Use: /ai your question")
+    if not update.message or not update.message.text:
+        return
 
-    prompt = " ".join(context.args)
+    text = update.message.text
+    user = update.message.from_user
+    user_id = str(user.id)
 
-    res = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    bot = await context.bot.get_me()
+    bot_username = bot.username.lower()
 
-    msg = await update.message.reply_text(res.choices[0].message.content)
+    is_command = text.startswith("/ai")
+    is_reply = update.message.reply_to_message and update.message.reply_to_message.from_user.id == bot.id
+    is_mention = f"@{bot_username}" in text.lower()
+
+    if not (is_command or is_reply or is_mention):
+        return
+
+    prompt = text.replace("/ai", "").replace(f"@{bot_username}", "").strip()
+
+    if not prompt:
+        msg = await update.message.reply_text("Something sollu da 🤨")
+        asyncio.create_task(auto_delete(msg))
+        return
+
+    history = data["memory"].get(user_id, [])
+    history.append({"role": "user", "content": prompt})
+    history = history[-6:]
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Reply in Tamil / English / Tanglish. Keep it short and friendly."
+                },
+                *history
+            ]
+        )
+
+        reply = response.choices[0].message.content
+
+        history.append({"role": "assistant", "content": reply})
+        data["memory"][user_id] = history
+
+        with open("data.json", "w") as f:
+            json.dump(data, f)
+
+        msg = await update.message.reply_text(reply)
+        asyncio.create_task(auto_delete(msg))
+
+    except Exception as e:
+        print("AI ERROR:", e)
+        msg = await update.message.reply_text("⚠️ AI error")
+        asyncio.create_task(auto_delete(msg))
+
+# ================= CLEAR MEMORY =================
+async def clear_memory(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = str(update.effective_user.id)
+    data["memory"][user_id] = []
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    msg = await update.message.reply_text("🧠 Memory cleared")
     asyncio.create_task(auto_delete(msg))
 
 # ================= ADMIN COMMANDS =================
-
-# /warn @user reason
 async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return await update.message.reply_text("❌ Admin only")
 
     if not update.message.reply_to_message:
-        return await update.message.reply_text("Reply to user to warn")
+        return await update.message.reply_text("Reply to user")
 
     user = update.message.reply_to_message.from_user
     reason = " ".join(context.args) if context.args else "No reason"
@@ -149,7 +212,7 @@ async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{uid}")]]
     msg = await update.message.reply_text(
-        f"⚠️ {user.first_name} warned\nReason: {reason}\nTotal warns: {warns}",
+        f"⚠️ {user.first_name} warned\nReason: {reason}\nTotal: {warns}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     asyncio.create_task(auto_delete(msg))
@@ -162,7 +225,6 @@ async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-# /removewarn
 async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -176,7 +238,6 @@ async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("✅ Warn removed")
     asyncio.create_task(auto_delete(msg))
 
-# /ban
 async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -190,7 +251,6 @@ async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("🚫 Banned")
     asyncio.create_task(auto_delete(msg))
 
-# /unban
 async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -204,24 +264,26 @@ async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("✅ Unbanned")
     asyncio.create_task(auto_delete(msg))
 
+# ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, filter_bad))
+    app.add_handler(MessageHandler(filters.TEXT, ai))
+
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
     app.add_handler(CommandHandler("ai", ai))
+    app.add_handler(CommandHandler("clear", clear_memory))
+
     app.add_handler(CommandHandler("warns", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
 
-    print("🔥 BOT RUNNING 🔥")
-
-    # ✅ THIS handles event loop internally
+    print("🔥 ULTRA BOT RUNNING 🔥")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
