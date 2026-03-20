@@ -1,9 +1,7 @@
-[project]
-name = "pro-max-bot"
-
 [build]
-image = "python"
+builder = "NIXPACKS"
 
-[env]
-BOT_TOKEN = ""
-OPENAI_API_KEY = ""
+[deploy]
+startCommand = "python mybot.py"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
