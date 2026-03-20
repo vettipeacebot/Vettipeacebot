@@ -27,8 +27,7 @@ BAD = [
     "pm","dm","private chat","private message","direct chat","direct message",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity","inbox","thevidya","ummbu","gommala","ommala","kotta","badu","pvrt","ummbi","thayali","aatha","otha"
 ]
-       "pussy","pm","dm","thevudiya","oombu","otha"]
-
+       
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=180):
     await asyncio.sleep(delay)
