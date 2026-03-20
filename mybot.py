@@ -9,8 +9,8 @@ from telegram.ext import (
 from openai import OpenAI
 
 # ================== ENV VARIABLES ==================
-TOKEN = os.getenv("BOT_TOKEN")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+TOKEN = os.getenv("BOT_TOKEN")  # Your bot token
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Your OpenAI API key
 QUIZ_INTERVAL = 600  # 10 minutes
 
 # ================== DATA STORAGE ==================
@@ -74,7 +74,7 @@ async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.delete()
         return
 
-    # Ignore if message mentions "@admin"
+    # Ignore messages mentioning admin
     if "@admin" in text or "admin" in text:
         return
 
@@ -104,7 +104,7 @@ async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
             json.dump(data, f)
         return
 
-# ================== REMOVE WARN ==================
+# ================== REMOVE WARN BUTTON ==================
 async def remove_warn_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -120,30 +120,29 @@ async def remove_warn_callback(update: Update, context: ContextTypes.DEFAULT_TYP
         json.dump(data, f)
     await query.edit_message_text("✅ Warn removed!")
 
-# ================== AI CHAT ==================
+# ================== OPENAI AI CHAT ==================
 client = OpenAI(api_key=OPENAI_API_KEY)
-async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def ai_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.text:
         return
-    prompt = " ".join(context.args)
-    if not prompt:
-        await update.message.reply_text("❌ Please provide a message. Usage: /ai <message>")
-        return
+    prompt = update.message.text
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "user", "content": prompt}]
     )
     await update.message.reply_text(response.choices[0].message["content"])
 
-# ================== QUIZ ==================
-async def start_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    question = "🤖 Quiz Question: What is 2+2?"
-    answer = "4"
-    data["quiz"][str(chat_id)] = answer
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-    await update.message.reply_text(f"{question}\nAnswer in chat. ✅ Q&A will not delete.")
+# ================== QUIZ SYSTEM ==================
+async def quiz_job(context: ContextTypes.DEFAULT_TYPE):
+    for chat_id_str in data.get("quiz", {}):
+        chat_id = int(chat_id_str)
+        question = "🤖 Quiz Question: What is 2+2?"
+        answer = "4"
+        data["quiz"][str(chat_id)] = answer
+        with open("data.json", "w") as f:
+            json.dump(data, f)
+        await context.bot.send_message(chat_id, f"{question}\nAnswer in chat. ✅ Q&A will not delete.")
 
 async def check_quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
@@ -152,6 +151,7 @@ async def check_quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = str(update.message.from_user.id)
     if str(chat_id) not in data["quiz"]:
         return
+
     correct = data["quiz"][str(chat_id)]
     if update.message.text.strip().lower() == correct.lower():
         if user_id not in data["points"]:
@@ -159,15 +159,17 @@ async def check_quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data["points"][user_id]["daily"] += 1
         data["points"][user_id]["weekly"] += 1
         data["points"][user_id]["overall"] += 1
+
         with open("data.json", "w") as f:
             json.dump(data, f)
+
         await update.message.reply_text(f"✅ Correct answer by {update.message.from_user.first_name}!")
         del data["quiz"][str(chat_id)]
         with open("data.json", "w") as f:
             json.dump(data, f)
 
 # ================== LEADERBOARD ==================
-async def leaderboard_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def leaderboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🏆 Daily", callback_data="daily")],
         [InlineKeyboardButton("📅 Weekly", callback_data="weekly")],
@@ -184,9 +186,11 @@ async def leaderboard_callback(update: Update, context: ContextTypes.DEFAULT_TYP
     for user_id, pts in data.get("points", {}).items():
         scores.append((user_id, pts.get(kind,0)))
     scores.sort(key=lambda x:x[1], reverse=True)
+
     text = f"🏆 {kind.capitalize()} Leaderboard:\n"
     for uid, pts in scores[:10]:
         text += f"{uid}: {pts}\n"
+
     await query.edit_message_text(text)
 
 # ================== ADMIN COMMANDS ==================
@@ -258,6 +262,23 @@ async def unban_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text(f"✅ {user.first_name} has been unbanned!")
     asyncio.create_task(auto_delete(msg))
 
+# ================== MEMBER COMMANDS ==================
+async def startquiz_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    data["quiz"][str(chat_id)] = None
+    await update.message.reply_text("✅ Quiz enabled for this group! Wait for questions every 10 mins.")
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.args:
+        prompt = " ".join(context.args)
+        fake_update = update
+        fake_update.message.text = prompt
+        await ai_chat(fake_update, context)
+    else:
+        await update.message.reply_text("Usage: /ai <message>")
+
 # ================== MAIN ==================
 async def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -266,13 +287,11 @@ async def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, filter_bad))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, check_quiz_answer))
-    app.add_handler(CallbackQueryHandler(remove_warn_callback, pattern=r"removewarn_"))
-    app.add_handler(CallbackQueryHandler(leaderboard_callback, pattern=r"(daily|weekly|overall)"))
 
-    # Member commands
-    app.add_handler(CommandHandler("ai", ai_command))
-    app.add_handler(CommandHandler("startquiz", start_quiz))
-    app.add_handler(CommandHandler("leaderboard", leaderboard_command))
+    # Admin button callback
+    app.add_handler(CallbackQueryHandler(remove_warn_callback, pattern=r"removewarn_"))
+    app.add_handler(CommandHandler("leaderboard", leaderboard))
+    app.add_handler(CallbackQueryHandler(leaderboard_callback, pattern=r"(daily|weekly|overall)"))
 
     # Admin commands
     app.add_handler(CommandHandler("warns", warn_command))
@@ -280,12 +299,18 @@ async def main():
     app.add_handler(CommandHandler("ban", ban_command))
     app.add_handler(CommandHandler("unban", unban_command))
 
-    # Quiz job repeating every QUIZ_INTERVAL
+    # Member commands
+    app.add_handler(CommandHandler("startquiz", startquiz_command))
+    app.add_handler(CommandHandler("ai", ai_command))
+    app.add_handler(CommandHandler("leaderboard", leaderboard))
+
+    # Start repeating quiz job
     app.job_queue.run_repeating(quiz_job, interval=QUIZ_INTERVAL, first=10)
 
     print("🔥 PRO MAX LEGEND BOT STARTED 🔥")
-    await app.run_polling()
+    await app.start()
+    await app.updater.start_polling()  # For PTB v20+, optional
+    await app.updater.stop()  # Stop safely after polling if needed
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
