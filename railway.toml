@@ -1,0 +1,9 @@
+[project]
+name = "pro-max-bot"
+
+[build]
+image = "python"
+
+[env]
+BOT_TOKEN = ""
+OPENAI_API_KEY = ""
