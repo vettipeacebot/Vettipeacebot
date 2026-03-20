@@ -40,22 +40,27 @@ async def is_admin(update, context):
     except:
         return False
 
-# ================= WELCOME =================
+    # ================= WELCOME =================
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for user in update.message.new_chat_members:
+        name = user.first_name
+        username = f"@{user.username}" if user.username else "No username"
+        chat_id = update.effective_chat.id
+
         text = (
             f"🔮 Welcome to Bun Butter Jam!\n"
-    f"👤 Name: {name}\n"
-    f"💬 Username: {username}\n"
-    f"🆔 Group ID: {chat_id}\n\n"
-    f"📜 Rules:\n"
-    f"📩 Don't PM/DM others\n"
-    f"🚫 Avoid bad words\n"
-    f"⚠️ Follow admin instructions\n"
-    "If you have any issues, contact admin."
+            f"👤 Name: {name}\n"
+            f"💬 Username: {username}\n"
+            f"🆔 Group ID: {chat_id}\n\n"
+            f"📜 Rules:\n"
+            f"📩 Don't PM/DM others\n"
+            f"🚫 Avoid bad words\n"
+            f"⚠️ Follow admin instructions\n"
+            f"If you have any issues, contact admin."
         )
+
         msg = await update.message.reply_text(text)
-        asyncio.create_task(auto_delete(msg))
+         asyncio.create_task(auto_delete(msg))
 
 # ================= BAD WORD FILTER =================
 async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
