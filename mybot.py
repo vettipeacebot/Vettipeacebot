@@ -200,8 +200,7 @@ async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("✅ Unbanned")
     asyncio.create_task(auto_delete(msg))
 
-# ================= MAIN =================
-async def main():
+def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
@@ -209,13 +208,16 @@ async def main():
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
     app.add_handler(CommandHandler("ai", ai))
-    app.add_handler(CommandHandler("warn", warn_cmd))
+    app.add_handler(CommandHandler("warns", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
 
     print("🔥 BOT RUNNING 🔥")
-    await app.run_polling()
+
+    # ✅ THIS handles event loop internally
+    app.run_polling()
+
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
