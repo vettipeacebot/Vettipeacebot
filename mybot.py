@@ -21,7 +21,12 @@ else:
     data = {"warns": {}}
 
 # ================= BAD WORDS =================
-BAD = ["sex","porn","xxx","nude","fuck","ass","bitch","dick",
+BAD = [
+    "sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
+    "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
+    "pm","dm","private chat","private message","direct chat","direct message",
+    "punda","sunni","potta","thevudiya","thayoli","oombu","nudity","inbox","thevidya","ummbu","gommala","ommala","kotta","badu","pvrt","ummbi","thayali","aatha","otha"
+]
        "pussy","pm","dm","thevudiya","oombu","otha"]
 
 # ================= AUTO DELETE =================
