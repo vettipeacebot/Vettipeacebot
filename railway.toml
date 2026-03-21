@@ -1,6 +1,12 @@
 [project]
-name = "legend-v6-ultra-bot"
-project_type = "python"
+name = "security-bot-v3"
+description = "Legend V3 Security Telegram Bot"
 
 [env]
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+BOT_TOKEN = "your_bot_token_here"
+
+[build]
+command = "pip install -r requirements.txt"
+
+[deploy]
+start = "python mybot.py"
