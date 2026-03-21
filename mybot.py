@@ -1,22 +1,12 @@
+# mybot.py
 import os
-from telegram.ext import ApplicationBuilder
-from mybot_logic import setup_handlers
+from mybot_logic import main  # Import all logic from mybot_logic.py
 
-TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # Your Railway project URL
-PORT = int(os.environ.get("PORT", 8080))
+print("🚀 LEGEND V6 ULTRA BOT STARTING 🚀")
 
-app = ApplicationBuilder().token(TOKEN).build()
-
-# Attach all handlers: welcome, filters, admin commands, auto warn
-setup_handlers(app)
-
-# Start webhook
-app.run_webhook(
-    listen="0.0.0.0",
-    port=PORT,
-    url_path=TOKEN,
-    webhook_url=f"{WEBHOOK_URL}/{TOKEN}"
-)
-
-print("🚀 LEGEND V6 ULTRA WEBHOOK LOADED")
+if __name__ == "__main__":
+    # Make sure your environment variables are set:
+    # BOT_TOKEN -> your bot token
+    # PORT -> port for webhook (Railway default 8443)
+    # WEBHOOK_URL -> your public Railway domain
+    main()
