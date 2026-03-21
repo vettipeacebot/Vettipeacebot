@@ -1,6 +1,6 @@
-[build]
-builder = "nixpacks"
+[project]
+name = "legend-v6-ultra-bot"
+project_type = "python"
 
-[deploy]
-startCommand = "python mybot.py"
-restartPolicyType = "always"
+[env]
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
