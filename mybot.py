@@ -210,7 +210,7 @@ def main():
 
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-    print("🔥 FINAL SECURITY BOT RUNNING 🔥")
+    print("🔥 FINAL SECURITY RUNNING 🔥")
     app.run_polling()
 
 if __name__ == "__main__":
