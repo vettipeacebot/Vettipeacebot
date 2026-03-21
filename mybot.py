@@ -122,8 +122,9 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
     user = update.message.from_user
 
-    # ignore "admin"
+    # ignore only exact "admin"
     if text.strip() == "admin":
+        return
 
     # admin safe
     if await is_admin(update, context):
