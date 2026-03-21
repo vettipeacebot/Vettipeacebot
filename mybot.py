@@ -34,22 +34,18 @@ async def auto_delete(msg, delay=180):
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
-    try:
-        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
-        return update.effective_user.id in [a.user.id for a in admins]
-    except:
-        return False
+    admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+    return update.effective_user.id in [a.user.id for a in admins]
 
-# ================= GET USER =================
-def get_user(user):
-    name = user.first_name
-    username = f"@{user.username}" if user.username else name
-    return name, username
+# ================= GET USERNAME =================
+def get_username(user):
+    return f"@{user.username}" if user.username else user.first_name
 
 # ================= WELCOME =================
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for user in update.message.new_chat_members:
-        name, username = get_user(user)
+        name = user.first_name
+        username = f"@{user.username}" if user.username else "No username"
         chat_id = update.effective_chat.id
 
         text = (
@@ -71,46 +67,44 @@ async def handle_warn(update, context, user):
     user_id = str(user.id)
     chat_id = update.effective_chat.id
 
-    name, username = get_user(user)
-
     warns = data["warns"].get(user_id, 0) + 1
     data["warns"][user_id] = warns
 
+    name = get_username(user)
+
     keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
     msg = await update.message.reply_text(
-        f"⚠️ {username} warned\n"
-        f"Reason: against group rules\n"
-        f"Total warns: {warns}",
+        f"⚠️ {name} warned\nReason: against group rules\nTotal warns: {warns}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     asyncio.create_task(auto_delete(msg))
 
-    # 🔴 BAN AFTER 3 WARNS
+    # 3 warns = ban
     if warns >= 3:
         await context.bot.ban_chat_member(chat_id, user.id)
-        m = await update.message.reply_text(f"🚫 {username} banned (3 warns)")
-        asyncio.create_task(auto_delete(m))
+        ban_msg = await update.message.reply_text(f"🚫 {name} banned (3 warns)")
+        asyncio.create_task(auto_delete(ban_msg))
 
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-# ================= AUTO FILTER =================
-async def filter_bad(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ================= FILTER =================
+async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
 
     text = update.message.text.lower()
     user = update.message.from_user
 
-    # ignore admin word
+    # ignore exact "admin"
     if text.strip() == "admin":
         return
 
-    # admin safe
+    # admin safe (no warn, no delete)
     if await is_admin(update, context):
         return
 
-    # detect bad word
+    # detect bad words
     if any(word in text for word in BAD):
         await update.message.delete()
         await handle_warn(update, context, user)
@@ -132,8 +126,6 @@ async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text("✅ Warn removed")
 
 # ================= ADMIN COMMANDS =================
-
-# /warn (reply only)
 async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -142,26 +134,29 @@ async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await update.message.reply_text("Reply to user")
 
     user = update.message.reply_to_message.from_user
-    reason = " ".join(context.args) if context.args else "No reason"
+    reason = " ".join(context.args) or "No reason"
 
-    uid = str(user.id)
-    warns = data["warns"].get(uid, 0) + 1
-    data["warns"][uid] = warns
+    user_id = str(user.id)
+    warns = data["warns"].get(user_id, 0) + 1
+    data["warns"][user_id] = warns
 
-    _, username = get_user(user)
+    name = get_username(user)
 
+    keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
     msg = await update.message.reply_text(
-        f"⚠️ {username} warned\nReason: {reason}\nTotal warns: {warns}"
+        f"⚠️ {name} warned\nReason: {reason}\nTotal warns: {warns}",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
     asyncio.create_task(auto_delete(msg))
 
     if warns >= 3:
         await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+        ban_msg = await update.message.reply_text(f"🚫 {name} banned")
+        asyncio.create_task(auto_delete(ban_msg))
 
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-# /removewarn
 async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -175,7 +170,6 @@ async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = await update.message.reply_text("✅ Warn removed")
     asyncio.create_task(auto_delete(msg))
 
-# /ban
 async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -184,14 +178,11 @@ async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user = update.message.reply_to_message.from_user
-    _, username = get_user(user)
-
     await context.bot.ban_chat_member(update.effective_chat.id, user.id)
 
-    msg = await update.message.reply_text(f"🚫 {username} banned")
+    msg = await update.message.reply_text("🚫 Banned")
     asyncio.create_task(auto_delete(msg))
 
-# /unban
 async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
@@ -200,11 +191,9 @@ async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     user = update.message.reply_to_message.from_user
-    _, username = get_user(user)
-
     await context.bot.unban_chat_member(update.effective_chat.id, user.id)
 
-    msg = await update.message.reply_text(f"✅ {username} unbanned")
+    msg = await update.message.reply_text("✅ Unbanned")
     asyncio.create_task(auto_delete(msg))
 
 # ================= MAIN =================
@@ -212,7 +201,7 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, filter_bad))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, filter_all))
 
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
@@ -221,7 +210,7 @@ def main():
 
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-    print("🔥 FINAL BOT RUNNING 🔥")
+    print("🔥 FINAL SECURITY BOT RUNNING 🔥")
     app.run_polling()
 
 if __name__ == "__main__":
