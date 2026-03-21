@@ -1,3 +1,9 @@
 {
-  "warns": {}
+    "warns": {},
+    "filters": {
+        "miles": {
+            "type": "sticker",
+            "file_id": "CAACAgUAAxkBAAEBV2FfY..." 
+        }
+    }
 }
