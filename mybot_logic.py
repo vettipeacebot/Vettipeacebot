@@ -171,39 +171,110 @@ async def remove_warn_btn(update, context):
         json.dump(data, f)
     await query.edit_message_text("✅ Warn removed")
 
-# ================= ADMIN COMMANDS =================
-async def admin_warn(update, context):
+ # ================= ADMIN COMMANDS WITH @USERNAME =================
+async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
-    if update.message.reply_to_message:
-        await warn_user(update, context, update.message.reply_to_message.from_user)
+    if not context.args:
+        await update.message.reply_text("❌ Usage: /warn @username")
+        return
 
-async def admin_removewarn(update, context):
+    # Extract user mention
+    username = context.args[0].lstrip("@")
+    chat_members = await context.bot.get_chat(update.effective_chat.id)
+    target_user = None
+    for member in await context.bot.get_chat_administrators(update.effective_chat.id) + await update.effective_chat.get_members():
+        if member.user.username and member.user.username.lower() == username.lower():
+            target_user = member.user
+            break
+
+    if not target_user:
+        await update.message.reply_text("❌ User not found in this group.")
+        return
+
+    await warn_user(update, context, target_user)
+
+async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
-    if update.message.reply_to_message:
-        user = update.message.reply_to_message.from_user
-        data["warns"][str(user.id)] = 0
-        with open("data.json", "w") as f:
-            json.dump(data, f)
-        await update.message.reply_text("✅ Warn removed")
+    if not context.args:
+        await update.message.reply_text("❌ Usage: /removewarn @username")
+        return
 
-async def admin_ban(update, context):
+    username = context.args[0].lstrip("@")
+    target_user = None
+    for member in await update.effective_chat.get_members():
+        if member.user.username and member.user.username.lower() == username.lower():
+            target_user = member.user
+            break
+
+    if not target_user:
+        await update.message.reply_text("❌ User not found.")
+        return
+
+    data["warns"][str(target_user.id)] = 0
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    await update.message.reply_text(f"✅ Warn removed for @{username}")
+
+async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
-    if update.message.reply_to_message:
-        user = update.message.reply_to_message.from_user
-        await context.bot.ban_chat_member(update.effective_chat.id, user.id)
-        await update.message.reply_text("🚫 Banned")
+    if not context.args:
+        await update.message.reply_text("❌ Usage: /ban @username")
+        return
 
-async def admin_unban(update, context):
+    username = context.args[0].lstrip("@")
+    target_user = None
+    for member in await update.effective_chat.get_members():
+        if member.user.username and member.user.username.lower() == username.lower():
+            target_user = member.user
+            break
+
+    if not target_user:
+        await update.message.reply_text("❌ User not found.")
+        return
+
+    await context.bot.ban_chat_member(update.effective_chat.id, target_user.id)
+    await update.message.reply_text(f"🚫 @{username} banned")
+
+async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
         return
-    if update.message.reply_to_message:
-        user = update.message.reply_to_message.from_user
-        await context.bot.unban_chat_member(update.effective_chat.id, user.id)
-        await update.message.reply_text("✅ Unbanned")
+    if not context.args:
+        await update.message.reply_text("❌ Usage: /unban @username")
+        return
 
+    username = context.args[0].lstrip("@")
+    target_user = None
+    for member in await update.effective_chat.get_members():
+        if member.user.username and member.user.username.lower() == username.lower():
+            target_user = member.user
+            break
+
+    if not target_user:
+        await update.message.reply_text("❌ User not found.")
+        return
+
+    await context.bot.unban_chat_member(update.effective_chat.id, target_user.id)
+    await update.message.reply_text(f"✅ @{username} unbanned")
+
+# ================= NOTIFY ADMINS WHEN TAGGED =================
+async def admin_notify_tag(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = update.message.text
+    if "@admin" in text.lower():
+        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+        for admin in admins:
+            try:
+                await context.bot.send_message(
+                    admin.user.id,
+                    f"⚠️ You were mentioned in {update.effective_chat.title}\n"
+                    f"By: @{update.message.from_user.username or update.message.from_user.first_name}\n"
+                    f"Message: {update.message.text}"
+                )
+            except:
+                continue
 # ================= SETUP HANDLERS =================
 def setup_handlers(app):
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
