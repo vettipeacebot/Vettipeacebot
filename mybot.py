@@ -1,3 +1,5 @@
+print("🚀 SECURITY BOT V2 LOADED")  # 🔥 CHANGE THIS EVERY TIME
+
 import os
 import json
 import asyncio
@@ -17,12 +19,13 @@ else:
     data = {"warns": {}}
 
 # ================= BAD WORDS =================
-BAD = [
+BAD = BAD = [
     "sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
     "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
     "pm","dm","private chat","private message","direct chat","direct message",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity","inbox","thevidya","ummbu","gommala","ommala","kotta","badu","pvrt","ummbi","thayali","aatha","otha"
 ]
+    
 
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=180):
@@ -34,10 +37,16 @@ async def auto_delete(msg, delay=180):
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
-    admins = await context.bot.get_chat_administrators(update.effective_chat.id)
-    return update.effective_user.id in [a.user.id for a in admins]
+    try:
+        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+        return update.effective_user.id in [a.user.id for a in admins]
+    except:
+        return False
 
-# ================= GET USERNAME =================
+# ================= GET NAME =================
+def get_name(user):
+    return user.first_name
+
 def get_username(user):
     return f"@{user.username}" if user.username else user.first_name
 
@@ -63,27 +72,28 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         asyncio.create_task(auto_delete(msg))
 
 # ================= WARN SYSTEM =================
-async def handle_warn(update, context, user):
+async def warn_user(update, context, user):
     user_id = str(user.id)
     chat_id = update.effective_chat.id
 
     warns = data["warns"].get(user_id, 0) + 1
     data["warns"][user_id] = warns
 
-    name = get_username(user)
+    username = get_username(user)
 
     keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
-    msg = await update.message.reply_text(
-        f"⚠️ {name} warned\nReason: against group rules\nTotal warns: {warns}",
+    msg = await context.bot.send_message(
+        chat_id,
+        f"⚠️ {username} warned\nReason: against group rules\nTotal warns: {warns}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     asyncio.create_task(auto_delete(msg))
 
-    # 3 warns = ban
+    # 3 WARNS = BAN
     if warns >= 3:
         await context.bot.ban_chat_member(chat_id, user.id)
-        ban_msg = await update.message.reply_text(f"🚫 {name} banned (3 warns)")
-        asyncio.create_task(auto_delete(ban_msg))
+        m = await context.bot.send_message(chat_id, f"🚫 {username} banned (3 warns)")
+        asyncio.create_task(auto_delete(m))
 
     with open("data.json", "w") as f:
         json.dump(data, f)
@@ -93,50 +103,25 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
         return
 
-    text = update.message.text.lower()
+    text = update.message.text.lower().strip()
     user = update.message.from_user
 
-    # Ignore if admin
+    # allow "admin" word
+    if text == "admin":
+        return
+
+    # skip admins
     if await is_admin(update, context):
         return
 
-    # Ignore if ONLY "admin"
-    if text.strip() == "admin":
-        return
-
-    # Check bad words
-    if any(word in text.split() for word in BAD):
-        chat_id = update.effective_chat.id
-        name = get_name(user)
-
-        # 🔥 SEND WARN FIRST (IMPORTANT FIX)
-        keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user.id}")]]
-
-        warns = data["warns"].get(str(user.id), 0) + 1
-        data["warns"][str(user.id)] = warns
-
-        msg = await context.bot.send_message(
-            chat_id=chat_id,
-            text=f"⚠️ {name} warned\nReason: against group rules\nTotal warns: {warns}",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        asyncio.create_task(auto_delete(msg))
-
-        # 🔥 DELETE USER MESSAGE AFTER
+    # detect bad words
+    if any(word in text for word in BAD):
         try:
             await update.message.delete()
         except:
             pass
 
-        # 🔥 BAN AFTER 3 WARNS
-        if warns >= 3:
-            await context.bot.ban_chat_member(chat_id, user.id)
-            m = await context.bot.send_message(chat_id, f"🚫 {name} banned (3 warns)")
-            asyncio.create_task(auto_delete(m))
-
-        # SAVE DATA
-        with open("data.json", "w") as f:
-            json.dump(data, f)
+        await warn_user(update, context, user)
 
 # ================= REMOVE WARN BUTTON =================
 async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -160,31 +145,10 @@ async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     if not update.message.reply_to_message:
-        return await update.message.reply_text("Reply to user")
+        return
 
     user = update.message.reply_to_message.from_user
-    reason = " ".join(context.args) or "No reason"
-
-    user_id = str(user.id)
-    warns = data["warns"].get(user_id, 0) + 1
-    data["warns"][user_id] = warns
-
-    name = get_username(user)
-
-    keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
-    msg = await update.message.reply_text(
-        f"⚠️ {name} warned\nReason: {reason}\nTotal warns: {warns}",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-    asyncio.create_task(auto_delete(msg))
-
-    if warns >= 3:
-        await context.bot.ban_chat_member(update.effective_chat.id, user.id)
-        ban_msg = await update.message.reply_text(f"🚫 {name} banned")
-        asyncio.create_task(auto_delete(ban_msg))
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
+    await warn_user(update, context, user)
 
 async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_admin(update, context):
@@ -239,7 +203,7 @@ def main():
 
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-    print("🔥 FINAL SECURITY RUNNING 🔥")
+    print("🔥 SECURITY BOT RUNNING V2 🔥")
     app.run_polling()
 
 if __name__ == "__main__":
