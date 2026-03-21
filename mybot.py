@@ -54,17 +54,22 @@ def get_name(user):
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for user in update.message.new_chat_members:
         name = get_name(user)
-        msg = await update.message.reply_text(
+        username = f"@{user.username}" if user.username else "No username"
+        chat_id = update.effective_chat.id
+
+        text = (
             f"🔮 Welcome to Bun Butter Jam!\n"
-    f"👤 Name: {name}\n"
-    f"💬 Username: {username}\n"
-    f"🆔 Group ID: {chat_id}\n\n"
-    f"📜 Rules:\n"
-    f"📩 Don't PM/DM others\n"
-    f"🚫 Avoid bad words\n"
-    f"⚠️ Follow admin instructions\n"
-    "If you have any issues, contact admin."
-)
+            f"👤 Name: {name}\n"
+            f"💬 Username: {username}\n"
+            f"🆔 Group ID: {chat_id}\n\n"
+            f"📜 Rules:\n"
+            f"📩 Don't PM/DM others\n"
+            f"🚫 Avoid bad words\n"
+            f"⚠️ Follow admin instructions\n"
+            "If you have any issues, contact admin."
+        )
+
+        msg = await update.message.reply_text(text)
         asyncio.create_task(auto_delete(msg))
 
 # ================= MUTE =================
@@ -118,8 +123,7 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
 
     # ignore "admin"
-    if "admin" in text:
-        return
+    if text.strip() == "admin":
 
     # admin safe
     if await is_admin(update, context):
