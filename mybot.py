@@ -1,4 +1,11 @@
-print("🚀 LEGEND V5 ULTRA LOADED")  # 🔥 NEW VERSION
+import logging
+
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    level=logging.INFO
+)
+
+logging.info("🚀 LEGEND V5 ULTRA LOADED")
 
 import os
 import json
