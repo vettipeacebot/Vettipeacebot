@@ -96,18 +96,47 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
     user = update.message.from_user
 
-    # ignore exact "admin"
-    if text.strip() == "admin":
-        return
-
-    # admin safe (no warn, no delete)
+    # Ignore if admin
     if await is_admin(update, context):
         return
 
-    # detect bad words
-    if any(word in text for word in BAD):
-        await update.message.delete()
-        await handle_warn(update, context, user)
+    # Ignore if ONLY "admin"
+    if text.strip() == "admin":
+        return
+
+    # Check bad words
+    if any(word in text.split() for word in BAD):
+        chat_id = update.effective_chat.id
+        name = get_name(user)
+
+        # 🔥 SEND WARN FIRST (IMPORTANT FIX)
+        keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user.id}")]]
+
+        warns = data["warns"].get(str(user.id), 0) + 1
+        data["warns"][str(user.id)] = warns
+
+        msg = await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"⚠️ {name} warned\nReason: against group rules\nTotal warns: {warns}",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        asyncio.create_task(auto_delete(msg))
+
+        # 🔥 DELETE USER MESSAGE AFTER
+        try:
+            await update.message.delete()
+        except:
+            pass
+
+        # 🔥 BAN AFTER 3 WARNS
+        if warns >= 3:
+            await context.bot.ban_chat_member(chat_id, user.id)
+            m = await context.bot.send_message(chat_id, f"🚫 {name} banned (3 warns)")
+            asyncio.create_task(auto_delete(m))
+
+        # SAVE DATA
+        with open("data.json", "w") as f:
+            json.dump(data, f)
 
 # ================= REMOVE WARN BUTTON =================
 async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
