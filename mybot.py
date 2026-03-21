@@ -1,16 +1,14 @@
-print("🚀 LEGEND V6 ULTRA LOADED")  # 🔥 CHANGE THIS EVERY TIME
-
 import os
 import json
 import asyncio
-import string
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputMediaAnimation, InputMediaVideo, InputMediaPhoto
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
     MessageHandler, CallbackQueryHandler, filters
 )
 
 TOKEN = os.getenv("BOT_TOKEN")
+PORT = int(os.environ.get("PORT", "8443"))
 
 # ================= DATA =================
 if os.path.exists("data.json"):
@@ -20,41 +18,29 @@ else:
     data = {"warns": {}, "filters": {}}
 
 # ================= BAD WORDS ================
-BAD = [
-    "sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
-    "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
-    "punda","sunni","potta","thevudiya","thayoli","oombu","nudity",
-    "thevidya","ummbu","gommala","ommala","kotta","badu","ummbi",
-    "thayali","aatha","otha"
-]
+BAD = ["sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
+       "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
+       "punda","sunni","potta","thevudiya","thayoli","oombu","nudity",
+       "thevidya","ummbu","gommala","ommala","kotta","badu","ummbi",
+       "thayali","aatha","otha"]
 
-# ================= AUTO DELETE =================
+# ================= HELPERS =================
 async def auto_delete(msg, delay=180):
     await asyncio.sleep(delay)
-    try:
-        await msg.delete()
-    except:
-        pass
+    try: await msg.delete()
+    except: pass
 
-# ================= ADMIN CHECK =================
-async def is_admin(update, context):
-    try:
-        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
-        return update.effective_user.id in [a.user.id for a in admins]
-    except:
-        return False
-
-# ================= GET NAME =================
 def get_name(user):
     return user.first_name
 
 def get_username(user):
     return f"@{user.username}" if user.username else user.first_name
 
-# ================= EXACT BAD WORD CHECK =================
-def contains_bad_word(text):
-    words = [w.strip(string.punctuation) for w in text.lower().split()]
-    return any(word in BAD for word in words)
+async def is_admin(update, context):
+    try:
+        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+        return update.effective_user.id in [a.user.id for a in admins]
+    except: return False
 
 # ================= WELCOME =================
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -63,7 +49,6 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         username = get_username(user)
         group_name = update.effective_chat.title
         chat_id = update.effective_chat.id
-
         text = (
             f"🔮 Welcome to {group_name}!\n"
             f"👤 Name: {name}\n"
@@ -74,27 +59,24 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"🚫 Avoid bad words\n"
             f"⚠️ Follow admin instructions\n"
         )
-        msg = await update.message.reply_text(text)
-        asyncio.create_task(auto_delete(msg))
+        await update.message.reply_text(text)
 
 # ================= WARN SYSTEM =================
-async def warn_user(update, context, user, reason="against group rules"):
+async def warn_user(update, context, user):
     user_id = str(user.id)
     chat_id = update.effective_chat.id
-
     warns = data["warns"].get(user_id, 0) + 1
     data["warns"][user_id] = warns
-    username = get_username(user)
 
+    username = get_username(user)
     keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
     msg = await context.bot.send_message(
         chat_id,
-        f"⚠️ {username} warned\nReason: {reason}\nTotal warns: {warns}",
+        f"⚠️ {username} warned\nReason: against group rules\nTotal warns: {warns}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     asyncio.create_task(auto_delete(msg))
 
-    # 3 warns = ban
     if warns >= 3:
         await context.bot.ban_chat_member(chat_id, user.id)
         m = await context.bot.send_message(chat_id, f"🚫 {username} banned (3 warns)")
@@ -104,99 +86,37 @@ async def warn_user(update, context, user, reason="against group rules"):
         json.dump(data, f)
 
 # ================= FILTER SYSTEM =================
-async def handle_filters(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text if update.message.text else ""
-    chat_id = update.effective_chat.id
+async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
     user = update.message.from_user
-    username = get_username(user)
+    text = (update.message.text or "").lower().strip()
 
-    # skip admins
-    if await is_admin(update, context):
-        return
+    if text == "admin": return
+    if await is_admin(update, context): return
 
-    # ignore "admin"
-    if text.lower().strip() == "admin":
-        return
-
-    # check exact bad words
-    if contains_bad_word(text):
-        await update.message.delete()
+    # BAD WORD CHECK
+    words = text.split()
+    if any(word in BAD for word in words):
+        try: await update.message.delete()
+        except: pass
         await warn_user(update, context, user)
-        return
 
-    # check filters
+    # FILTER CHECK
+    chat_id = update.effective_chat.id
     filters_list = data.get("filters", {}).get(str(chat_id), {})
-    for keyword, content in filters_list.items():
-        if keyword.lower() in text.lower():
-            if "text" in content:
-                await context.bot.send_message(chat_id, content["text"])
-            if "file_id" in content:
-                await context.bot.copy_message(chat_id, chat_id, content["file_id"])
-            break
-
-# ================= ADMIN FILTER COMMANDS =================
-async def filter_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-
-    chat_id = update.effective_chat.id
-    args = context.args
-    if not args or not update.message.reply_to_message:
-        msg = await update.message.reply_text("Usage: reply to message/video/sticker and use /filter <keyword>")
-        asyncio.create_task(auto_delete(msg))
-        return
-
-    keyword = args[0].lower()
-    reply = update.message.reply_to_message
-
-    # Save filter
-    if str(chat_id) not in data["filters"]:
-        data["filters"][str(chat_id)] = {}
-    if reply.text:
-        data["filters"][str(chat_id)][keyword] = {"text": reply.text}
-    else:
-        file_id = None
-        if reply.sticker:
-            file_id = reply.sticker.file_id
-        elif reply.video:
-            file_id = reply.video.file_id
-        elif reply.animation:
-            file_id = reply.animation.file_id
-        elif reply.photo:
-            file_id = reply.photo[-1].file_id
-        if file_id:
-            data["filters"][str(chat_id)][keyword] = {"file_id": file_id}
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-    msg = await update.message.reply_text(f"✅ Filter '{keyword}' added")
-    asyncio.create_task(auto_delete(msg))
-
-async def stopfilter_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-    chat_id = update.effective_chat.id
-    args = context.args
-    if not args:
-        return
-    keyword = args[0].lower()
-    if str(chat_id) in data["filters"] and keyword in data["filters"][str(chat_id)]:
-        data["filters"][str(chat_id)].pop(keyword)
-        with open("data.json", "w") as f:
-            json.dump(data, f)
-        msg = await update.message.reply_text(f"✅ Filter '{keyword}' removed")
-        asyncio.create_task(auto_delete(msg))
-
-async def listfilters_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    if str(chat_id) not in data.get("filters", {}):
-        msg = await update.message.reply_text("No filters set")
-        asyncio.create_task(auto_delete(msg))
-        return
-    filters_list = list(data["filters"][str(chat_id)].keys())
-    msg = await update.message.reply_text("Filters:\n" + "\n".join(filters_list))
-    asyncio.create_task(auto_delete(msg))
+    for key, value in filters_list.items():
+        if key.lower() in text:
+            # Send saved content
+            if value["type"] == "text":
+                await update.message.reply_text(value["data"])
+            elif value["type"] == "sticker":
+                await update.message.reply_sticker(value["data"])
+            elif value["type"] == "animation":
+                await update.message.reply_animation(value["data"])
+            elif value["type"] == "video":
+                await update.message.reply_video(value["data"])
+            return
 
 # ================= REMOVE WARN BUTTON =================
 async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -206,84 +126,118 @@ async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return await query.edit_message_text("❌ Admin only")
     user_id = query.data.split("_")[1]
     data["warns"][user_id] = 0
-    with open("data.json", "w") as f:
-        json.dump(data, f)
+    with open("data.json", "w") as f: json.dump(data, f)
     await query.edit_message_text("✅ Warn removed")
 
 # ================= ADMIN COMMANDS =================
-async def warn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-    user = None
+async def warn_cmd(update, context):
+    if not await is_admin(update, context): return
+    # Reply or @username
     if update.message.reply_to_message:
         user = update.message.reply_to_message.from_user
     elif context.args:
-        mention = context.args[0].replace("@", "")
-        for member in await context.bot.get_chat_administrators(update.effective_chat.id):
-            if member.user.username == mention:
-                user = member.user
-                break
-    if user:
-        await warn_user(update, context, user)
+        username = context.args[0].lstrip("@")
+        user = await context.bot.get_chat_member(update.effective_chat.id, username)
+    else:
+        return
+    await warn_user(update, context, user)
 
-async def removewarn_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-    user = None
+async def removewarn_cmd(update, context):
+    if not await is_admin(update, context): return
     if update.message.reply_to_message:
         user = update.message.reply_to_message.from_user
-    elif context.args:
-        mention = context.args[0].replace("@", "")
-        for member in await context.bot.get_chat_administrators(update.effective_chat.id):
-            if member.user.username == mention:
-                user = member.user
-                break
-    if user:
         data["warns"][str(user.id)] = 0
-        with open("data.json", "w") as f:
-            json.dump(data, f)
-        msg = await update.message.reply_text(f"✅ Warn removed for {get_username(user)}")
+        msg = await update.message.reply_text(f"✅ {get_username(user)} warn removed")
         asyncio.create_task(auto_delete(msg))
 
-async def ban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-    user = update.message.reply_to_message.from_user if update.message.reply_to_message else None
-    if user:
+async def ban_cmd(update, context):
+    if not await is_admin(update, context): return
+    if update.message.reply_to_message:
+        user = update.message.reply_to_message.from_user
         await context.bot.ban_chat_member(update.effective_chat.id, user.id)
         msg = await update.message.reply_text(f"🚫 {get_username(user)} banned")
         asyncio.create_task(auto_delete(msg))
 
-async def unban_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_admin(update, context):
-        return
-    user = update.message.reply_to_message.from_user if update.message.reply_to_message else None
-    if user:
+async def unban_cmd(update, context):
+    if not await is_admin(update, context): return
+    if update.message.reply_to_message:
+        user = update.message.reply_to_message.from_user
         await context.bot.unban_chat_member(update.effective_chat.id, user.id)
         msg = await update.message.reply_text(f"✅ {get_username(user)} unbanned")
         asyncio.create_task(auto_delete(msg))
+
+# ================= FILTER COMMANDS =================
+async def add_filter(update, context):
+    if not await is_admin(update, context): return
+    if not context.args or not update.message.reply_to_message: return
+    key = context.args[0].lower()
+    msg = update.message.reply_to_message
+    chat_id = str(update.effective_chat.id)
+    if chat_id not in data["filters"]: data["filters"][chat_id] = {}
+
+    if msg.text:
+        data["filters"][chat_id][key] = {"type":"text","data":msg.text}
+    elif msg.sticker:
+        data["filters"][chat_id][key] = {"type":"sticker","data":msg.sticker.file_id}
+    elif msg.animation:
+        data["filters"][chat_id][key] = {"type":"animation","data":msg.animation.file_id}
+    elif msg.video:
+        data["filters"][chat_id][key] = {"type":"video","data":msg.video.file_id}
+
+    with open("data.json","w") as f: json.dump(data,f)
+    await update.message.reply_text(f"✅ Filter '{key}' saved")
+
+async def stop_filter(update, context):
+    if not await is_admin(update, context): return
+    if not context.args: return
+    key = context.args[0].lower()
+    chat_id = str(update.effective_chat.id)
+    if chat_id in data["filters"] and key in data["filters"][chat_id]:
+        del data["filters"][chat_id][key]
+        with open("data.json","w") as f: json.dump(data,f)
+        await update.message.reply_text(f"❌ Filter '{key}' removed")
+
+async def list_filters(update, context):
+    if not await is_admin(update, context): return
+    chat_id = str(update.effective_chat.id)
+    filters_list = data["filters"].get(chat_id,{})
+    if not filters_list: await update.message.reply_text("No filters saved"); return
+    keys = ", ".join(filters_list.keys())
+    await update.message.reply_text(f"📋 Saved filters:\n{keys}")
 
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
+    # WELCOME
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, handle_filters))
+    # AUTO WARN / FILTER
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-    # Admin commands
+    # ADMIN COMMANDS
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
-    app.add_handler(CommandHandler("filter", filter_cmd))
-    app.add_handler(CommandHandler("stopfilter", stopfilter_cmd))
-    app.add_handler(CommandHandler("filters", listfilters_cmd))
 
-    # Callback for remove warn button
+    # FILTER COMMANDS
+    app.add_handler(CommandHandler("filter", add_filter))
+    app.add_handler(CommandHandler("stopfilter", stop_filter))
+    app.add_handler(CommandHandler("filters", list_filters))
+
+    # REMOVE WARN BUTTON
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
+    print("🚀 LEGEND V6 ULTRA LOADED")
     print("🔥 LEGEND V6 ULTRA BOT RUNNING 🔥")
-    app.run_polling()
+
+    # ✅ Webhook mode for Railway
+    app.run_webhook(
+        listen="0.0.0.0",
+        port=PORT,
+        url_path=TOKEN,
+        webhook_url=f"https://{os.environ['RAILWAY_STATIC_URL']}/{TOKEN}"
+    )
 
 if __name__ == "__main__":
     main()
