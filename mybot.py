@@ -39,17 +39,21 @@ async def auto_delete(msg, delay=180):
         pass
 
 # ================= AUTO SAFETY MESSAGE =================
-SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTOS, LOCATION WITH ANYONE.\n🎯 STAY SAFE AND HAVE FUN !"
-
-async def auto_safety_message(context: ContextTypes.DEFAULT_TYPE):
-    chat_ids = context.bot_data.get("all_chats", set())
-    print("📌 Sending safety message to chats:", chat_ids)  # DEBUG
-    for cid in chat_ids:
-        try:
-            msg = await context.bot.send_message(chat_id=cid, text=SAFETY_MSG)
-            asyncio.create_task(auto_delete(msg, delay=59))
-        except Exception as e:
-            print("❌ Failed to send to", cid, e)
+async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type in ["group", "supergroup"]:
+        chat_ids = context.bot_data.get("all_chats", set())
+        if update.effective_chat.id not in chat_ids:
+            chat_ids.add(update.effective_chat.id)
+            context.bot_data["all_chats"] = chat_ids
+            # Immediately send safety message to newly added group
+            try:
+                msg = await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text=SAFETY_MSG
+                )
+                asyncio.create_task(auto_delete(msg, delay=59))
+            except Exception as e:
+                print("❌ Failed to send safety message to new group:", e)
 
 # ================= TRACK GROUP CHATS =================
 async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
