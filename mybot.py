@@ -334,3 +334,6 @@ def main():
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
+
+if __name__ == "__main__":    
+    main()
