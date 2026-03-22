@@ -307,6 +307,7 @@ async def list_filters(update, context):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
+    # Command handlers
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
@@ -316,18 +317,20 @@ def main():
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
+    # Callback button
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
+
+    # Welcome new members
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+
+    # Main filter
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-# Track all groups the bot is active in
-app.add_handler(MessageHandler(filters.ALL, track_chats))
+    # Track all groups the bot is active in
+    app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-# Schedule the auto safety message to repeat every 60 seconds
-app.job_queue.run_repeating(auto_safety_message, interval=60, first=5)
+    # Schedule the auto safety message every 60 seconds
+    app.job_queue.run_repeating(auto_safety_message, interval=60, first=5)
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
-
-if __name__ == "__main__":
-    main()
