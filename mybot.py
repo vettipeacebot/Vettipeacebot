@@ -309,6 +309,7 @@ def main():
     app.add_handler(MessageHandler(filters.ALL, track_chats))  
 
     # START SAFETY LOOP  
+
    app.create_task(start_safety_loop(app))  
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")  
