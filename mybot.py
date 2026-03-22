@@ -290,30 +290,32 @@ async def list_filters(update, context):
     asyncio.create_task(auto_delete(msg))  
 
 # ================= MAIN =================  
-def main():  
-    app = ApplicationBuilder().token(TOKEN).build()  
+def main():
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    # COMMANDS  
-    app.add_handler(CommandHandler("warn", warn_cmd))  
-    app.add_handler(CommandHandler("removewarn", removewarn_cmd))  
-    app.add_handler(CommandHandler("ban", ban_cmd))  
-    app.add_handler(CommandHandler("unban", unban_cmd))  
-    app.add_handler(CommandHandler("filter", add_filter))  
-    app.add_handler(CommandHandler("stopfilter", stop_filter))  
-    app.add_handler(CommandHandler("filters", list_filters))  
+    # Command handlers
+    app.add_handler(CommandHandler("warn", warn_cmd))
+    app.add_handler(CommandHandler("removewarn", removewarn_cmd))
+    app.add_handler(CommandHandler("ban", ban_cmd))
+    app.add_handler(CommandHandler("unban", unban_cmd))
 
-    # HANDLERS  
-    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))  
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))  
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))  
-    app.add_handler(MessageHandler(filters.ALL, track_chats))  
+    app.add_handler(CommandHandler("filter", add_filter))
+    app.add_handler(CommandHandler("stopfilter", stop_filter))
+    app.add_handler(CommandHandler("filters", list_filters))
 
-    # START SAFETY LOOP  
+    # Button & message handlers
+    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-   app.create_task(start_safety_loop(app))  
+    # Track all groups
+    app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-    print("🔥 SECURITY BOT V8 RUNNING 🔥")  
-    app.run_polling()  
+    # Start the safety message loop (correct indentation!)
+    app.create_task(start_safety_loop(app))
+
+    print("🔥 SECURITY BOT V8 RUNNING 🔥")
+    app.run_polling()
 
 if __name__ == "__main__":  
     main()
