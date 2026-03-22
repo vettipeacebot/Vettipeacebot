@@ -31,7 +31,7 @@ BAD = set([
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add"]
 
 # ================= AUTO DELETE =================
-async def auto_delete(msg, delay=59):
+async def auto_delete(msg, delay=9):
     await asyncio.sleep(delay)
     try:
         await msg.delete()
@@ -41,19 +41,14 @@ async def auto_delete(msg, delay=59):
 # ================= AUTO SAFETY MESSAGE =================
 SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTOS, LOCATION WITH ANYONE.\n🎯 STAY SAFE AND HAVE FUN !"
 
-async def fast_safety_loop(app):
-    while True:
-        chat_ids = app.bot_data.get("all_chats", set())
-        for cid in chat_ids:
-            try:
-                # Send safety message
-                msg = await app.bot.send_message(chat_id=cid, text=SAFETY_MSG)
-                # Auto delete after 9 seconds (1 second buffer)
-                asyncio.create_task(auto_delete(msg, delay=9))
-            except:
-                continue
-        # Wait 10 seconds before sending again
-        await asyncio.sleep(10)
+async def fast_safety_loop(context: ContextTypes.DEFAULT_TYPE):
+    chat_ids = context.bot_data.get("all_chats", set())
+    for cid in chat_ids:
+        try:
+            msg = await context.bot.send_message(chat_id=cid, text=SAFETY_MSG)
+            asyncio.create_task(auto_delete(msg))
+        except:
+            continue
 
 # ================= TRACK GROUPS =================
 async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -315,12 +310,11 @@ def main():
     # Track all groups
     app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-    # Start safety message loop
-    app.create_task(fast_safety_loop(app))
+    # Start safety message every 10 seconds using JobQueue
+    app.job_queue.run_repeating(fast_safety_loop, interval=10, first=5)
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
