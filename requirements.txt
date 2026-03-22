@@ -1,1 +1,1 @@
-python-telegram-bot[async]==20.6
+python-telegram-bot[async,job-queue]==20.6
