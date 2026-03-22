@@ -316,6 +316,7 @@ def main():
     app.add_handler(CommandHandler("filter", add_filter))
 
 app.add_handler(CommandHandler("stopfilter", stop_filter))
+
     app.add_handler(CommandHandler("filters", list_filters))
 
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
