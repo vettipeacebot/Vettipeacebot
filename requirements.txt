@@ -1,4 +1,2 @@
-python-telegram-bot[async,job-queue]==20.6
+python-telegram-bot[async]==20.6
 aiohttp==3.8.5
-async-timeout==4.0.2
-certifi==2026.3.23
