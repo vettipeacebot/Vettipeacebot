@@ -24,11 +24,11 @@ BAD = set([
     "sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
     "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity",
-    "thevidya","ummbu","gommala","ommala","kotta","badu","mairu","ummbi",
+    "thevidya","ummbu","gommala","ommala","kotta","badu","pvrt","ummbi",
     "thayali","aatha","otha"
 ])
 
-PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","thaniya","addd","pvrt","added"]
+PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add"]
 
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=9):
@@ -37,6 +37,29 @@ async def auto_delete(msg, delay=9):
         await msg.delete()
     except:
         pass
+
+# ================= SAFETY MESSAGE =================
+SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTOS, LOCATION WITH ANYONE.\n🎯 STAY SAFE AND HAVE FUN !"
+
+async def safety_loop(app):
+    # Small delay to ensure bot fully starts
+    await asyncio.sleep(1)
+    while True:
+        chat_ids = app.bot_data.get("all_chats", set())
+        for cid in chat_ids:
+            try:
+                msg = await app.bot.send_message(chat_id=cid, text=SAFETY_MSG)
+                asyncio.create_task(auto_delete(msg, delay=9))
+            except:
+                continue
+        await asyncio.sleep(10)  # every 10 seconds
+
+# ================= TRACK GROUPS =================
+async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_chat.type in ["group", "supergroup"]:
+        chat_ids = context.bot_data.get("all_chats", set())
+        chat_ids.add(update.effective_chat.id)
+        context.bot_data["all_chats"] = chat_ids
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
@@ -54,7 +77,6 @@ def get_username(user):
 async def find_user(update, context):
     if update.message.reply_to_message:
         return update.message.reply_to_message.from_user
-
     if context.args:
         username = context.args[0].replace("@", "").lower()
         try:
@@ -166,8 +188,10 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
+
     if not await is_admin(update, context):
         return await q.edit_message_text("❌ Admin only")
+
     uid = q.data.split("_")[1]
     data["warns"][uid] = 0
     with open("data.json", "w") as f:
@@ -252,50 +276,25 @@ async def stop_filter(update, context):
 
     if key in data["filters"].get(cid, {}):
         del data["filters"][cid][key]
-
         with open("data.json", "w") as f:
             json.dump(data, f)
-
         msg = await update.message.reply_text(f"🛑 Filter '{key}' removed")
         asyncio.create_task(auto_delete(msg))
 
 async def list_filters(update, context):
     cid = str(update.effective_chat.id)
     flt = data["filters"].get(cid, {})
-
     if not flt:
         return await update.message.reply_text("❌ No filters")
-
     txt = "📂 Filters:\n" + "\n".join(f"• {k}" for k in flt)
     msg = await update.message.reply_text(txt)
     asyncio.create_task(auto_delete(msg))
-
-# ================= SAFETY MESSAGE LOOP =================
-SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTOS, LOCATION WITH ANYONE.\n🎯 STAY SAFE AND HAVE FUN !"
-
-async def safety_loop(app):
-    while True:
-        chat_ids = app.bot_data.get("all_chats", set())
-        for cid in chat_ids:
-            try:
-                msg = await app.bot.send_message(chat_id=cid, text=SAFETY_MSG)
-                asyncio.create_task(auto_delete(msg, delay=9))
-            except:
-                continue
-        await asyncio.sleep(10)  # every 10 seconds
-
-# ================= TRACK GROUPS =================
-async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_chat.type in ["group", "supergroup"]:
-        chat_ids = context.bot_data.get("all_chats", set())
-        chat_ids.add(update.effective_chat.id)
-        context.bot_data["all_chats"] = chat_ids
 
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Commands
+    # Command handlers
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
@@ -304,14 +303,16 @@ def main():
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
-    # Buttons & Messages
+    # Button & message handlers
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+
+    # Track all groups
     app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-    # Start safety loop
-    app.create_task(safety_loop(app))
+    # Start safety loop AFTER bot is running
+    app.post_init.append(lambda _: safety_loop(app))
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
