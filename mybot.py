@@ -42,19 +42,17 @@ async def auto_delete(msg, delay=180):
 SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTO, LOCATION WITH ANYONE. 🎯 STAY SAFE !"
 
 async def auto_safety_message(context: ContextTypes.DEFAULT_TYPE):
-    # Get all chats stored in context.bot_data
     chat_ids = context.bot_data.get("all_chats", set())
-
+    print("📌 Sending safety message to chats:", chat_ids)  # Debug
     for cid in chat_ids:
         try:
             msg = await context.bot.send_message(chat_id=cid, text=SAFETY_MSG)
-            # Delete after 59 seconds
             asyncio.create_task(auto_delete(msg, delay=59))
-        except:
-            continue
+        except Exception as e:
+            print("❌ Failed to send to", cid, e)
 
+# ================= TRACK CHATS =================
 async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Store all group chat IDs where the bot is active
     if update.effective_chat.type in ["group", "supergroup"]:
         chat_ids = context.bot_data.get("all_chats", set())
         chat_ids.add(update.effective_chat.id)
@@ -79,7 +77,6 @@ async def find_user(update, context):
 
     if context.args:
         username = context.args[0].replace("@", "").lower()
-
         try:
             admins = await context.bot.get_chat_administrators(update.effective_chat.id)
             for a in admins:
@@ -87,11 +84,11 @@ async def find_user(update, context):
                     return a.user
         except:
             pass
-
     return None
 
 # ================= WELCOME =================
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await track_chats(update, context)  # Track group on new member
     for user in update.message.new_chat_members:
         text = (
             f"🔮 Welcome to {update.effective_chat.title}!\n"
@@ -130,6 +127,8 @@ async def warn_user(update, context, user, reason="against group rules"):
 
 # ================= MAIN FILTER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await track_chats(update, context)  # Track group on any message
+
     if not update.message:
         return
 
@@ -139,16 +138,14 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await is_admin(update, context):
         return
 
-    # 🔥 ADMIN TAG (NO DELETE)
+    # ADMIN TAG (no delete)
     if "@admin" in text:
         try:
             admins = await context.bot.get_chat_administrators(update.effective_chat.id)
             tag = f"🚨 {get_username(user)} needs ADMIN!\n\n"
-
             for a in admins:
                 if not a.user.is_bot and a.user.username:
                     tag += f"@{a.user.username} "
-
             msg = await update.message.reply_text(tag)
             asyncio.create_task(auto_delete(msg))
         except:
@@ -192,16 +189,12 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-
     if not await is_admin(update, context):
         return await q.edit_message_text("❌ Admin only")
-
     uid = q.data.split("_")[1]
     data["warns"][uid] = 0
-
     with open("data.json", "w") as f:
         json.dump(data, f)
-
     await q.edit_message_text("✅ Warn removed")
 
 # ================= COMMANDS =================
@@ -219,7 +212,6 @@ async def removewarn_cmd(update, context):
     user = await find_user(update, context)
     if not user:
         return await update.message.reply_text("❌ User not found")
-
     data["warns"][str(user.id)] = 0
     msg = await update.message.reply_text("✅ Warn removed")
     asyncio.create_task(auto_delete(msg))
@@ -230,7 +222,6 @@ async def ban_cmd(update, context):
     user = await find_user(update, context)
     if not user:
         return await update.message.reply_text("❌ User not found")
-
     await context.bot.ban_chat_member(update.effective_chat.id, user.id)
     msg = await update.message.reply_text(f"🚫 {get_username(user)} banned")
     asyncio.create_task(auto_delete(msg))
@@ -241,7 +232,6 @@ async def unban_cmd(update, context):
     user = await find_user(update, context)
     if not user:
         return await update.message.reply_text("❌ User not found")
-
     await context.bot.unban_chat_member(update.effective_chat.id, user.id)
     msg = await update.message.reply_text(f"✅ {get_username(user)} unbanned")
     asyncio.create_task(auto_delete(msg))
@@ -307,33 +297,34 @@ async def list_filters(update, context):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Command handlers
+    # Initialize bot_data
+    if "all_chats" not in app.bot_data:
+        app.bot_data["all_chats"] = set()
+
+    # Commands
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
-
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
-    # Callback button
+    # Buttons
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-    # Welcome new members
+    # Message handlers
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-
-    # Main filter
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-    # Track all groups the bot is active in
+    # Track all chats for safety message
     app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-    # Schedule the auto safety message every 60 seconds
+    # Schedule auto safety message every 60 seconds
     app.job_queue.run_repeating(auto_safety_message, interval=60, first=5)
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
     main()
