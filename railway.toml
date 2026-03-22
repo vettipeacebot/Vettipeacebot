@@ -1,12 +1,6 @@
-[project]
-name = "security-bot-v3"
-description = "Legend V3 Security Telegram Bot"
-
-[env]
-BOT_TOKEN = "your_bot_token_here"
-
 [build]
-command = "pip install -r requirements.txt"
+builder = "NIXPACKS"
 
 [deploy]
-start = "python mybot.py"
+startCommand = "python mybot.py"
+restartPolicyType = "ON_FAILURE"
