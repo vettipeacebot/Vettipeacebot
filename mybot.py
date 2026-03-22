@@ -38,6 +38,28 @@ async def auto_delete(msg, delay=180):
     except:
         pass
 
+# ================= AUTO SAFETY MESSAGE =================
+SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTO, LOCATION WITH ANYONE. 🎯 STAY SAFE !"
+
+async def auto_safety_message(context: ContextTypes.DEFAULT_TYPE):
+    # Get all chats stored in context.bot_data
+    chat_ids = context.bot_data.get("all_chats", set())
+
+    for cid in chat_ids:
+        try:
+            msg = await context.bot.send_message(chat_id=cid, text=SAFETY_MSG)
+            # Delete after 59 seconds
+            asyncio.create_task(auto_delete(msg, delay=59))
+        except:
+            continue
+
+async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Store all group chat IDs where the bot is active
+    if update.effective_chat.type in ["group", "supergroup"]:
+        chat_ids = context.bot_data.get("all_chats", set())
+        chat_ids.add(update.effective_chat.id)
+        context.bot_data["all_chats"] = chat_ids
+
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
     try:
@@ -297,6 +319,12 @@ def main():
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+
+# Track all groups the bot is active in
+app.add_handler(MessageHandler(filters.ALL, track_chats))
+
+# Schedule the auto safety message to repeat every 60 seconds
+app.job_queue.run_repeating(auto_safety_message, interval=60, first=5)
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
