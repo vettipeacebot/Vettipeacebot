@@ -41,16 +41,18 @@ async def auto_delete(msg, delay=59):
 # ================= SAFETY MESSAGE =================  
 SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTOS, LOCATION WITH ANYONE.\n🎯 STAY SAFE AND HAVE FUN !"  
 
-async def safety_loop(app):  
-    while True:  
-        chat_ids = app.bot_data.get("all_chats", set())  
-        for cid in chat_ids:  
-            try:  
-                msg = await app.bot.send_message(chat_id=cid, text=SAFETY_MSG)  
-                asyncio.create_task(auto_delete(msg, delay=59))  
-            except Exception as e:  
-                print("❌ Failed to send safety message:", e)  
-        await asyncio.sleep(60)  # repeat every 60 seconds  
+async def start_safety_loop(app):
+    # Wait a few seconds before starting
+    await asyncio.sleep(5)
+    while True:
+        chat_ids = app.bot_data.get("all_chats", set())
+        for cid in chat_ids:
+            try:
+                msg = await app.bot.send_message(chat_id=cid, text=SAFETY_MSG)
+                asyncio.create_task(auto_delete(msg, delay=59))
+            except Exception as e:
+                print("❌ Failed to send safety message:", e)
+        await asyncio.sleep(60)  # repeat every 60 seconds
 
 # ================= TRACK GROUPS =================  
 async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):  
@@ -307,7 +309,7 @@ def main():
     app.add_handler(MessageHandler(filters.ALL, track_chats))  
 
     # START SAFETY LOOP  
-    app.loop.create_task(safety_loop(app))  
+   app.create_task(start_safety_loop(app))  
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")  
     app.run_polling()  
