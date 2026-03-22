@@ -1,8 +1,9 @@
-print("🚀 SECURITY BOT V3 LOADED")  # 🔥 CHANGE THIS EVERY TIME
+print("🚀 SECURITY BOT V4 LOADED")
 
 import os
 import json
 import asyncio
+import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
@@ -27,7 +28,7 @@ BAD = [
     "thayali","aatha","otha"
 ]
 
-PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox"]
+PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add"]
 
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=180):
@@ -37,20 +38,29 @@ async def auto_delete(msg, delay=180):
     except:
         pass
 
+
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
-    try:
-        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
-        return update.effective_user.id in [a.user.id for a in admins]
-    except:
-        return False
+    admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+    return update.effective_user.id in [a.user.id for a in admins]
 
-# ================= GET NAME =================
-def get_name(user):
-    return user.first_name
-
+# ================= GET USER =================
 def get_username(user):
     return f"@{user.username}" if user.username else user.first_name
+
+# ================= FIND USER =================
+async def find_user(update, context):
+    if update.message.reply_to_message:
+        return update.message.reply_to_message.from_user
+
+    if context.args:
+        username = context.args[0].replace("@", "")
+        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+        for a in admins:
+            if a.user.username == username:
+                return a.user
+
+    return None
 
 # ================= WELCOME =================
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -81,29 +91,27 @@ async def warn_user(update, context, user, reason="against group rules"):
 
     warns = data["warns"].get(user_id, 0) + 1
     data["warns"][user_id] = warns
-    username = get_username(user)
 
     keyboard = [[InlineKeyboardButton("Remove Warn", callback_data=f"rw_{user_id}")]]
     msg = await context.bot.send_message(
         chat_id,
-        f"⚠️ {username} warned\nReason: {reason}\nTotal warns: {warns}",
+        f"⚠️ {get_username(user)} warned\nReason: {reason}\nTotal warns: {warns}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
     asyncio.create_task(auto_delete(msg))
 
-    # 3 WARNS = BAN
     if warns >= 3:
         await context.bot.ban_chat_member(chat_id, user.id)
-        m = await context.bot.send_message(chat_id, f"🚫 {username} banned (3 warns)")
-        asyncio.create_task(auto_delete(m))
 
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-# ================= FILTER HANDLER =================
+     
+ # ================= FILTER HANDLER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
+
     text = update.message.text.lower() if update.message.text else ""
     user = update.message.from_user
 
@@ -111,44 +119,42 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if await is_admin(update, context):
         return
 
-    # PM/DM words auto delete
-    if any(word in text for word in PM_WORDS):
-        try:
-            await update.message.delete()
-        except:
-            pass
+    # PM/DM delete
+    if any(w in text for w in PM_WORDS):
+        await update.message.delete()
         return
 
-    # Bad word detection (exact word match)
-    words = text.split()
+    # BAD WORD (exact match)
+    words = re.findall(r"\b\w+\b", text)
     for w in words:
-        if w.lower() in BAD:
-            try:
-                await update.message.delete()
-            except:
-                pass
+        if w in BAD:
+            await update.message.delete()
             await warn_user(update, context, user)
             return
 
-    # Filter system
+    # FILTERS
     chat_filters = data.get("filters", {}).get(str(update.effective_chat.id), {})
     for key, content in chat_filters.items():
-        if key.lower() in text:
-            # Send saved sticker/text/video
+        if key in text:
             if content["type"] == "text":
                 await update.message.reply_text(content["value"])
             elif content["type"] == "sticker":
                 await update.message.reply_sticker(content["value"])
             elif content["type"] == "video":
                 await update.message.reply_video(content["value"])
+            elif content["type"] == "gif":
+                await update.message.reply_animation(content["value"])
             return
 
-    # @admin mentions notify all admins
+    # @admin notify
     if "@admin" in text:
         admins = await context.bot.get_chat_administrators(update.effective_chat.id)
         for a in admins:
             try:
-                await context.bot.send_message(a.user.id, f"⚠️ You were tagged by {get_username(user)} in {update.effective_chat.title}")
+                await context.bot.send_message(
+                    a.user.id,
+                    f"🚨 {get_username(user)} mentioned ADMIN in {update.effective_chat.title}"
+                )
             except:
                 pass
 
@@ -273,27 +279,64 @@ async def stop_filter(update: Update, context: ContextTypes.DEFAULT_TYPE):
             json.dump(data, f)
         await update.message.reply_text(f"🛑 Filter '{keyword}' removed")
 
+async def warn_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if user:
+        await warn_user(update, context, user)
+
+async def removewarn_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if user:
+        data["warns"][str(user.id)] = 0
+        await update.message.reply_text("Warn removed")
+
+async def ban_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if user:
+        await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+
+async def unban_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if user:
+        await context.bot.unban_chat_member(update.effective_chat.id, user.id)
+
+# ================= BROADCAST =================
+async def all_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    if not context.args:
+        return
+
+    msg = " ".join(context.args)
+    await update.message.reply_text(f"📢 {msg}")
+
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Admin commands
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
+
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
+    app.add_handler(CommandHandler("filters", list_filters))
+    app.add_handler(CommandHandler("all", all_cmd))
 
-    # Callback remove warn
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
-
-    # General message handlers
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-    print("🔥 SECURITY BOT V3 RUNNING 🔥")
-    app.run_polling()  # Change to run_webhook() if you deploy on webhook
+    print("🔥 SECURITY BOT V4 RUNNING 🔥")
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
