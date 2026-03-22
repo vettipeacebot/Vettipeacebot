@@ -320,6 +320,5 @@ app.create_task(fast_safety_loop(app))
 
 print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
-
 if __name__ == "__main__":
     main()
