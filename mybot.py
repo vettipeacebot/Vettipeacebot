@@ -42,8 +42,6 @@ async def auto_delete(msg, delay=9):
 SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTOS, LOCATION WITH ANYONE.\n🎯 STAY SAFE AND HAVE FUN !"
 
 async def safety_loop(app):
-    # Small delay to ensure bot fully starts
-    await asyncio.sleep(1)
     while True:
         chat_ids = app.bot_data.get("all_chats", set())
         for cid in chat_ids:
@@ -52,7 +50,7 @@ async def safety_loop(app):
                 asyncio.create_task(auto_delete(msg, delay=9))
             except:
                 continue
-        await asyncio.sleep(10)  # every 10 seconds
+        await asyncio.sleep(10)  # send every 10 seconds
 
 # ================= TRACK GROUPS =================
 async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -294,7 +292,7 @@ async def list_filters(update, context):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Command handlers
+    # Add handlers
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
@@ -302,17 +300,13 @@ def main():
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
-
-    # Button & message handlers
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
-
-    # Track all groups
     app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-    # Start safety loop AFTER bot is running
-    app.post_init.append(lambda _: safety_loop(app))
+    # ⚡ Schedule safety loop correctly
+    app.post_init = lambda app: asyncio.create_task(safety_loop(app))
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
     app.run_polling()
