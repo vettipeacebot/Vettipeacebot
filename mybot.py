@@ -39,7 +39,8 @@ async def auto_delete(msg, delay=180):
         pass
 
 # ================= AUTO SAFETY MESSAGE =================
-SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTO, LOCATION WITH ANYONE. 🎯 STAY SAFE !"
+SAFETY_MSG = "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTO, LOCATION WITH ANYONE.    
+🎯 STAY SAFE !"
 
 async def auto_safety_message(context: ContextTypes.DEFAULT_TYPE):
     chat_ids = context.bot_data.get("all_chats", set())
