@@ -1,1 +1,2 @@
-python-telegram-bot[jobqueue]==20.5
+python-telegram-bot==20.6
+asyncio==3.4.3
