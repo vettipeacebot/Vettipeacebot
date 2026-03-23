@@ -31,11 +31,11 @@ BAD = set([
     "sex","porn","xxx","nude","fuck","ass","bitch","cunt","dick",
     "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity",
-    "thevidya","ummbu","gommala","ommala","kotta","badu","pvrt","ummbi",
+    "thevidya","ummbu","gommala","ommala","kotta","badu","mairu","ummbi",
     "thayali","aatha","otha"
 ])
 
-PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add"]
+PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd"]
 
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=DELETE_AFTER):
@@ -62,13 +62,32 @@ async def is_admin(update, context):
 def get_username(user):
     return f"@{user.username}" if user.username else user.first_name
 
+# ================= FIND USER =================
+async def find_user(update, context):
+    if update.message.reply_to_message:
+        return update.message.reply_to_message.from_user
+
+    if context.args:
+        username = context.args[0].replace("@", "").lower()
+
+        try:
+            admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+            for a in admins:
+                if a.user.username and a.user.username.lower() == username:
+                    return a.user
+        except:
+            pass
+
+    return None
+
 # ================= WELCOME =================
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for user in update.message.new_chat_members:
         text = (
-            f"🔮 Welcome to {update.effective_chat.title}!\n"
+            f"🔱 Welcome to {update.effective_chat.title}!\n"
             f"👤 Name: {user.first_name}\n"
-            f"💬 Username: {get_username(user)}\n\n"
+            f"💬 Username: {get_username(user)}\n"
+            f"🆔 Group ID: {update.effective_chat.id}\n\n"
             f"📜 Rules:\n"
             f"📩 Don't PM/DM others\n"
             f"🚫 Avoid bad words\n"
@@ -137,15 +156,20 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except:
         pass
 
-    # ADMIN TAG
+    # 🔥 ADMIN TAG (NO DELETE)
     if "@admin" in text:
-        admins = await context.bot.get_chat_administrators(update.effective_chat.id)
-        tag = f"🚨 {get_username(user)} needs ADMIN!\n\n"
-        for a in admins:
-            if a.user.username:
-                tag += f"@{a.user.username} "
-        msg = await update.message.reply_text(tag)
-        asyncio.create_task(auto_delete(msg))
+        try:
+            admins = await context.bot.get_chat_administrators(update.effective_chat.id)
+            tag = f"🚨 {get_username(user)} needs ADMIN!\n\n"
+
+            for a in admins:
+                if not a.user.is_bot and a.user.username:
+                    tag += f"@{a.user.username} "
+
+            msg = await update.message.reply_text(tag)
+            asyncio.create_task(auto_delete(msg))
+        except:
+            pass
         return
 
     # PM BLOCK
@@ -162,20 +186,17 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
     # FILTERS
-    cid = str(update.effective_chat.id)
-    chat_filters = data["filters"].get(cid, {})
-
+    chat_filters = data["filters"].get(str(update.effective_chat.id), {})
     for key, content in chat_filters.items():
         if key in text:
             if content["type"] == "text":
-                msg = await update.message.reply_text(content["value"])
+                await update.message.reply_text(content["value"])
             elif content["type"] == "sticker":
-                msg = await update.message.reply_sticker(content["value"])
+                await update.message.reply_sticker(content["value"])
             elif content["type"] == "video":
-                msg = await update.message.reply_video(content["value"])
+                await update.message.reply_video(content["value"])
             elif content["type"] == "gif":
-                msg = await update.message.reply_animation(content["value"])
-            asyncio.create_task(auto_delete(msg))
+                await update.message.reply_animation(content["value"])
             return
 
 # ================= BUTTON =================
@@ -195,6 +216,47 @@ async def remove_warn_btn(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await q.edit_message_text("✅ Warn removed")
 
 # ================= COMMANDS =================
+
+async def warn_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if not user:
+        return await update.message.reply_text("❌ User not found")
+    await warn_user(update, context, user)
+
+async def removewarn_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if not user:
+        return await update.message.reply_text("❌ User not found")
+
+    data["warns"][str(user.id)] = 0
+    msg = await update.message.reply_text("✅ Warn removed")
+    asyncio.create_task(auto_delete(msg))
+
+async def ban_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if not user:
+        return await update.message.reply_text("❌ User not found")
+
+    await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+    msg = await update.message.reply_text(f"🚫 {get_username(user)} banned")
+    asyncio.create_task(auto_delete(msg))
+
+async def unban_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+    user = await find_user(update, context)
+    if not user:
+        return await update.message.reply_text("❌ User not found")
+
+    await context.bot.unban_chat_member(update.effective_chat.id, user.id)
+    msg = await update.message.reply_text(f"✅ {get_username(user)} unbanned")
+    
 async def alert_cmd(update, context):
     if not await is_admin(update, context):
         return
@@ -221,6 +283,63 @@ async def alert_cmd(update, context):
 
     asyncio.create_task(auto_delete(msg))
 
+# ================= FILTER COMMANDS =================
+async def add_filter(update, context):
+    if not await is_admin(update, context): return
+    if not context.args: return
+
+    key = context.args[0].lower()
+    msg = update.message.reply_to_message
+    if not msg: return
+
+    if msg.sticker:
+        ftype, val = "sticker", msg.sticker.file_id
+    elif msg.video:
+        ftype, val = "video", msg.video.file_id
+    elif msg.animation:
+        ftype, val = "gif", msg.animation.file_id
+    elif msg.text:
+        ftype, val = "text", msg.text
+    else:
+        return
+
+    cid = str(update.effective_chat.id)
+    data["filters"].setdefault(cid, {})
+    data["filters"][cid][key] = {"type": ftype, "value": val}
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    msg2 = await update.message.reply_text(f"✅ Filter '{key}' added")
+    asyncio.create_task(auto_delete(msg2))
+
+async def stop_filter(update, context):
+    if not await is_admin(update, context): return
+    if not context.args: return
+
+    key = context.args[0].lower()
+    cid = str(update.effective_chat.id)
+
+    if key in data["filters"].get(cid, {}):
+        del data["filters"][cid][key]
+
+        with open("data.json", "w") as f:
+            json.dump(data, f)
+
+        msg = await update.message.reply_text(f"🛑 Filter '{key}' removed")
+        asyncio.create_task(auto_delete(msg))
+
+async def list_filters(update, context):
+    cid = str(update.effective_chat.id)
+    flt = data["filters"].get(cid, {})
+
+    if not flt:
+        return await update.message.reply_text("❌ No filters")
+
+    txt = "📂 Filters:\n" + "\n".join(f"• {k}" for k in flt)
+    msg = await update.message.reply_text(txt)
+    asyncio.create_task(auto_delete(msg))
+
 # ================= STARTUP =================
 async def on_startup(app):
     asyncio.create_task(group_alert_task(app))
@@ -230,8 +349,16 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("alert", alert_cmd))
-    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
+    app.add_handler(CommandHandler("warn", warn_cmd))
+    app.add_handler(CommandHandler("removewarn", removewarn_cmd))
+    app.add_handler(CommandHandler("ban", ban_cmd))
+    app.add_handler(CommandHandler("unban", unban_cmd))
 
+    app.add_handler(CommandHandler("filter", add_filter))
+    app.add_handler(CommandHandler("stopfilter", stop_filter))
+    app.add_handler(CommandHandler("filters", list_filters))
+
+    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
