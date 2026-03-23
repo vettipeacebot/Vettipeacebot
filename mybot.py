@@ -22,8 +22,7 @@ else:
 LAST_ALERT = {}
 
 # ================= CONFIG =================
-ALERT_MSG = "⚠️📲 Do not share your phone number, photos,
-location with anyone.
+ALERT_MSG = "⚠️📲 Do not share your phone number, photos,location with anyone.
 🍭 Stay safe have fun !"
 
 ALERT_INTERVAL = 30
