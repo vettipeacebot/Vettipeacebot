@@ -1,17 +1,12 @@
 [project]
-
-name = "SECURITY BOT V8 NEXT GEN"
-
-description = "SECURITY BOT V8 NEXT GEN FOR TELEGRAM"
+name = "SECURITY BOT V9 PRO MAX"
+description = "SECURITY BOT V9 PRO MAX FOR TELEGRAM"
 
 [env]
-
 BOT_TOKEN = "your_bot_token_here"
 
 [build]
-
 command = "pip install -r requirements.txt"
 
 [deploy]
-
 start = "python mybot.py"
