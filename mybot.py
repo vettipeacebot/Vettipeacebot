@@ -119,23 +119,20 @@ async def warn_user(update, context, user, reason="against group rules"):
 
 # ================= ALERT SYSTEM =================
 async def group_alert_task(app):
+    await asyncio.sleep(5)
+
     while True:
         for cid, settings in data.get("groups", {}).items():
             if not settings.get("alert", True):
                 continue
 
-            now = asyncio.get_event_loop().time()
-            if cid in LAST_ALERT and now - LAST_ALERT[cid] < ALERT_INTERVAL:
-                continue
-
             try:
                 msg = await app.bot.send_message(int(cid), ALERT_MSG)
                 asyncio.create_task(auto_delete(msg))
-                LAST_ALERT[cid] = now
             except:
                 continue
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(ALERT_INTERVAL)
 
 # ================= FILTER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -152,10 +149,13 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Auto delete all messages (except warn messages)
     try:
+        # Only delete normal user messages (not commands)
+if not update.message.text.startswith("/"):
+    try:
         asyncio.create_task(auto_delete(update.message))
     except:
         pass
-
+    
     # 🔥 ADMIN TAG (NO DELETE)
     if "@admin" in text:
         try:
@@ -342,7 +342,7 @@ async def list_filters(update, context):
 
 # ================= STARTUP =================
 async def on_startup(app):
-    asyncio.create_task(group_alert_task(app))
+    app.create_task(group_alert_task(app))
 
 # ================= MAIN =================
 def main():
@@ -365,6 +365,8 @@ def main():
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
     app.post_init = on_startup
+
+app.run_polling(drop_pending_updates=True)
 
     app.run_polling()
 
