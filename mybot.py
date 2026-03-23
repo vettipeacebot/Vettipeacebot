@@ -221,6 +221,10 @@ async def alert_cmd(update, context):
 
     asyncio.create_task(auto_delete(msg))
 
+# ================= STARTUP =================
+async def on_startup(app):
+    asyncio.create_task(group_alert_task(app))
+
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
@@ -233,7 +237,7 @@ def main():
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
-    app.post_init = lambda app: asyncio.create_task(group_alert_task(app))
+    app.post_init = on_startup
 
     app.run_polling()
 
