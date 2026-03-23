@@ -289,7 +289,7 @@ async def list_filters(update, context):
     asyncio.create_task(auto_delete(msg))
 
 # ================= MAIN =================
-def main():
+async def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     # Add handlers
@@ -305,11 +305,11 @@ def main():
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
     app.add_handler(MessageHandler(filters.ALL, track_chats))
 
-    # ⚡ Schedule safety loop correctly
-    app.post_init = lambda app: asyncio.create_task(safety_loop(app))
+    # ⚡ Start safety loop properly
+    asyncio.create_task(safety_loop(app))
 
     print("🔥 SECURITY BOT V8 RUNNING 🔥")
-    app.run_polling()
+    await app.run_polling()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
