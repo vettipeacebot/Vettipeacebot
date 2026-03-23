@@ -1,0 +1,31 @@
+from telegram.ext import Application, JobQueue
+import asyncio
+
+# Build your bot application
+app = Application.builder().token("YOUR_BOT_TOKEN").build()
+
+# Attach a JobQueue
+job_queue = JobQueue()
+app.job_queue = job_queue
+job_queue.set_application(app)
+
+# Define your safety loop
+async def safety_loop(app):
+    while True:
+        if GROUPS:
+            for gid in GROUPS:
+                try:
+                    msg = await app.bot.send_message(
+                        gid,
+                        "🚨 DO NOT SHARE YOUR PHONE NUMBER, PHOTO, LOCATION WITH ANYONE.🎯 STAY SAFE HAVE FUN !"
+                    )
+                    asyncio.create_task(auto_delete(msg, delay=29))
+                except Exception as e:
+                    print(f"Failed to send to {gid}: {e}")
+        await asyncio.sleep(30)
+
+# Schedule the safety loop to start
+app.job_queue.run_once(lambda ctx: asyncio.create_task(safety_loop(app)), 0)
+
+# Start the bot
+app.run_polling()
