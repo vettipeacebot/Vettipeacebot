@@ -283,13 +283,11 @@ def main():
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-    async def run_bot():
+    # Start repeating alert
+    async def start_alerts():
         asyncio.create_task(repeating_alert(app))
-        await app.start()
-        await app.updater.start_polling()
-        await app.idle()
 
-    asyncio.run(run_bot())
-
-if __name__ == "__main__":
-    main()
+    # Start bot with proper polling
+    app.job_queue.run_once(lambda ctx: asyncio.create_task(repeating_alert(app)), 0)
+    print("🔥 SECURITY BOT V8 RUNNING 🔥")
+    app.run_polling()
