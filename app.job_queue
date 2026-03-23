@@ -1,1 +1,0 @@
-app.job_queue.run_repeating(lambda ctx: asyncio.create_task(safety_loop(app)), interval=30, first=0)
