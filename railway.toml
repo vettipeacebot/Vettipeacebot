@@ -1,6 +1,19 @@
+[project]
+
+name = "SECURITY BOT V8 NEXT GEN"
+
+description = "SECURITY BOT V8 NEXT GEN FOR TELEGRAM"
+
+[env]
+
+BOT_TOKEN = "your_bot_token_here"
+
 [build]
-builder = "NIXPACKS"
+
+command =
+
+pip install -r requirements.txt"
 
 [deploy]
-startCommand = "python mybot.py"
-restartPolicyType = "ON_FAILURE"
+
+start = "python mybot.py"
