@@ -17,7 +17,7 @@ if os.path.exists("data.json"):
     with open("data.json", "r") as f:
         data = json.load(f)
 else:
-    data = {"warns": {}, "filters": {}, "groups": {}}
+    data = {"lang" : {}, "warns": {}, "filters": {}, "groups": {}}
 
 LAST_ALERT = {}
 
@@ -107,63 +107,116 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 # ================= START (PM PANEL) =================
-async def start(update, context):
+TEXT = {
+    "en": {
+        "start": "🔱 Hello!\n\nναηηαкαм ∂α мαρℓα is the most complete Bot to help you manage your groups easily and safely!\n\n🫴 Add me in a Supergroup and promote me as Admin to let me get in action!\n\n❗WHICH ARE THE COMMANDS? ❗\nPress /help to see all the commands!",
+        "manage": "⚙️ Manage group settings",
+        "support": "Support 📩",
+        "info": "Information 🤖",
+        "lang": "🇮🇳 Languages 🇮🇳",
+        "add": "➕ Add me to a group ➕",
+        "settings": "Manage group Settings\n\n👉🏻 Select the group whose settings you want to change.",
+    },
+    "ta": {
+        "start": "🔱 வணக்கம்!\n\nஇந்த Bot உங்கள் குழுக்களை பாதுகாப்பாக நிர்வகிக்க உதவும்!\n\n🫴 என்னை குழுவில் Admin ஆக்குங்கள்!\n\n❗COMMANDS பார்க்க /help அழுத்துங்கள்!",
+        "manage": "⚙️ குழு அமைப்புகள்",
+        "support": "ஆதரவு 📩",
+        "info": "தகவல் 🤖",
+        "lang": "🇮🇳 மொழிகள் 🇮🇳",
+        "add": "➕ குழுவில் சேர்க்க ➕",
+        "settings": "குழு அமைப்புகள்\n\n👉 மாற்ற வேண்டிய குழுவை தேர்வு செய்யவும்",
+    }
+}
+
+def get_lang(uid):
+    return data["lang"].get(str(uid), "en")
+
+# ================= START =================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_chat.type != "private":
         return
 
+    uid = str(update.effective_user.id)
+    lang = get_lang(uid)
+    t = TEXT[lang]
+
     buttons = [
-        [InlineKeyboardButton("📂 Manage your group", callback_data="manage")],
-        [InlineKeyboardButton("🆘 Support", callback_data="support")],
-        [InlineKeyboardButton("📚 Commands", callback_data="commands")]
+        [InlineKeyboardButton(t["add"], url=f"https://t.me/{context.bot.username}?startgroup=true")],
+        [InlineKeyboardButton(t["manage"], callback_data="manage")],
+        [InlineKeyboardButton(t["support"], callback_data="support")],
+        [InlineKeyboardButton(t["info"], callback_data="info")],
+        [InlineKeyboardButton(t["lang"], callback_data="lang")]
     ]
 
-    await update.message.reply_text(
-        "👋 Welcome to SECURITY BOT V12\n\nManage your groups easily 🔥",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
+    await update.message.reply_text(t["start"], reply_markup=InlineKeyboardMarkup(buttons))
 
-# ================= MANAGE GROUP =================
-async def manage_groups(update, context):
+# ================= LANGUAGE =================
+async def language_menu(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    buttons = [
+        [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
+        [InlineKeyboardButton("🇮🇳 Tamil", callback_data="lang_ta")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+    ]
+
+    await q.edit_message_text("🌐 Select Language", reply_markup=InlineKeyboardMarkup(buttons))
+
+async def set_language(update, context, lang_code):
+    q = update.callback_query
+    await q.answer()
+
+    uid = str(q.from_user.id)
+    data["lang"][uid] = lang_code
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    await back_menu(update, context)
+
+# ================= MANAGE =================
+async def manage(update, context):
     q = update.callback_query
     await q.answer()
 
     uid = q.from_user.id
     buttons = []
 
-    for cid, info in data.get("groups", {}).items():
+    for gid, info in data["groups"].items():
         try:
-            admins = await context.bot.get_chat_administrators(int(cid))
+            admins = await context.bot.get_chat_administrators(int(gid))
             if uid in [a.user.id for a in admins]:
-                title = info.get("title", "Unknown Group")
-                buttons.append([InlineKeyboardButton(title, callback_data=f"grp_{cid}")])
+                buttons.append([InlineKeyboardButton(info["title"], callback_data=f"grp_{gid}")])
         except:
             continue
 
     if not buttons:
-        return await q.edit_message_text(
-            "⚠️ No groups found!\n\nAdd bot & send message in group."
-        )
+        return await q.edit_message_text("⚠️ No groups found!")
 
     buttons.append([InlineKeyboardButton("⬅️ Back", callback_data="back")])
 
-    await q.edit_message_text(
-        "📂 Manage your group\n\nSelect a group:",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
+    await q.edit_message_text("Select your group:", reply_markup=InlineKeyboardMarkup(buttons))
 
-# ================= GROUP PANEL =================
-async def group_panel(update, context, gid):
-    q = update.callback_query
-    await q.answer()
+# ================= SETTINGS COMMAND =================
+async def settings_cmd(update, context):
+    if update.effective_chat.type != "private":
+        return
 
-    await q.edit_message_text(
-        f"⚙️ Group ID: {gid}\n\nUse commands in group:\n"
-        "/warn /ban /unban\n"
-        "/filter /alerton /alertoff",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⬅️ Back", callback_data="manage")]
-        ])
-    )
+    uid = str(update.effective_user.id)
+    lang = get_lang(uid)
+    t = TEXT[lang]
+
+    buttons = []
+    for gid, info in data["groups"].items():
+        try:
+            admins = await context.bot.get_chat_administrators(int(gid))
+            if int(uid) in [a.user.id for a in admins]:
+                buttons.append([InlineKeyboardButton(info["title"], callback_data=f"grp_{gid}")])
+        except:
+            continue
+
+    await update.message.reply_text(t["settings"], reply_markup=InlineKeyboardMarkup(buttons))
 
 # ================= SUPPORT =================
 async def support(update, context):
@@ -171,57 +224,73 @@ async def support(update, context):
     await q.answer()
 
     await q.edit_message_text(
-        "🆘 Support\n\nContact owner:\n👉 @vettipeace",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("⬅️ Back", callback_data="back")]
-        ])
+        "If you want more information contact developer:\n\n"
+        "Telegram: @vettipeace\nInstagram: @vettipeace\nSnapchat: @vettipeace\nEmail: mohamedaflal1999786@gmail.com",
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
     )
 
-# ================= COMMANDS PAGE =================
-async def commands_page(update, context):
+# ================= INFO =================
+async def info(update, context):
     q = update.callback_query
     await q.answer()
 
     await q.edit_message_text(
-        "📚 Commands\n\n"
-        "👑 Admin:\n"
-        "/warn /removewarn\n"
-        "/ban /unban\n\n"
-        "⚙️ System:\n"
-        "/alerton /alertoff\n"
-        "/filter /stopfilter\n"
-        "/filters",
+        "ναηηαкαм ∂α мαρℓα Bot\n\nVersion: V12\n\nAdmins:\n@vettipeace\n@tammy10117\n\n⚠️ Bot staff cannot help in group issues.",
         reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("Bot Support", callback_data="botsupport")],
+            [InlineKeyboardButton("Bot Commands", callback_data="help")],
             [InlineKeyboardButton("⬅️ Back", callback_data="back")]
         ])
     )
 
-# ================= MENU =================
-async def menu_handler(update, context):
+# ================= HELP =================
+async def help_cmd(update, context):
+    text = (
+        "Welcome to help menu!\n\n"
+        "Warn | Removewarn\nBan | Unban\n"
+        "Filter | Stopfilter\nFilters\nAlerton | Alertoff | Alert"
+    )
+    if update.message:
+        await update.message.reply_text(text)
+    else:
+        await update.callback_query.edit_message_text(text)
+
+# ================= CALLBACK =================
+async def menu(update, context):
     q = update.callback_query
     data_cb = q.data
 
     if data_cb == "manage":
-        return await manage_groups(update, context)
-    elif data_cb.startswith("grp_"):
-        return await group_panel(update, context, data_cb.split("_")[1])
+        await manage(update, context)
     elif data_cb == "support":
-        return await support(update, context)
-    elif data_cb == "commands":
-        return await commands_page(update, context)
+        await support(update, context)
+    elif data_cb == "info":
+        await info(update, context)
+    elif data_cb == "lang":
+        await language_menu(update, context)
+    elif data_cb.startswith("lang_"):
+        await set_language(update, context, data_cb.split("_")[1])
+    elif data_cb == "help":
+        await help_cmd(update, context)
 
 # ================= BACK =================
 async def back_menu(update, context):
     q = update.callback_query
     await q.answer()
 
+    uid = str(q.from_user.id)
+    lang = get_lang(uid)
+    t = TEXT[lang]
+
     buttons = [
-        [InlineKeyboardButton("📂 Manage your group", callback_data="manage")],
-        [InlineKeyboardButton("🆘 Support", callback_data="support")],
-        [InlineKeyboardButton("📚 Commands", callback_data="commands")]
+        [InlineKeyboardButton(t["add"], url=f"https://t.me/{context.bot.username}?startgroup=true")],
+        [InlineKeyboardButton(t["manage"], callback_data="manage")],
+        [InlineKeyboardButton(t["support"], callback_data="support")],
+        [InlineKeyboardButton(t["info"], callback_data="info")],
+        [InlineKeyboardButton(t["lang"], callback_data="lang")]
     ]
 
-    await q.edit_message_text("🏠 Main Menu", reply_markup=InlineKeyboardMarkup(buttons))
+    await q.edit_message_text(t["start"], reply_markup=InlineKeyboardMarkup(buttons))
 
 # ================= WARN =================
 async def warn_user(update, context, user, reason="against group rules"):
@@ -521,10 +590,13 @@ async def on_startup(app):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # 🔥 PM PANEL (ADD THIS TOP)
+    # 🔥 PM PANEL (TOP PRIORITY)
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("settings", settings_cmd))
+
     app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
-    app.add_handler(CallbackQueryHandler(menu_handler))
+    app.add_handler(CallbackQueryHandler(menu_handler))  # your main menu system
 
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
@@ -542,12 +614,15 @@ def main():
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
-    # 🔥 CALLBACK (KEEP THIS BELOW MENU HANDLER)
+    # 🔥 CALLBACK (AFTER MENU HANDLER)
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
     # 🔥 EVENTS
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+
+    # 🔥 SAVE GROUPS (VERY IMPORTANT - KEEP LAST)
+    app.add_handler(MessageHandler(filters.ALL, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
