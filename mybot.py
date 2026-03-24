@@ -607,9 +607,6 @@ def main():
     # 2️⃣ REMOVE WARN
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-    # 3️⃣ TOGGLE ALERT (NEW)
-    app.add_handler(CallbackQueryHandler(toggle_alert_btn, pattern="togglealert_"))
-
     # 4️⃣ MAIN MENU SYSTEM
     app.add_handler(CallbackQueryHandler(
         menu,
