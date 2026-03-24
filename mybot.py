@@ -394,22 +394,26 @@ async def on_startup(app):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
+    # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
+    app.add_handler(CommandHandler("alerton", alert_on_cmd))
+    app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
+    # 🔥 ADMIN COMMANDS
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
 
-app.add_handler(CommandHandler("alerton", alert_on_cmd))
-
-app.add_handler(CommandHandler("alertoff", alert_off_cmd))
-
+    # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
+    # 🔥 CALLBACK
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
+
+    # 🔥 EVENTS
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
@@ -418,6 +422,7 @@ app.add_handler(CommandHandler("alertoff", alert_off_cmd))
     app.post_init = on_startup
 
     app.run_polling(drop_pending_updates=True)
+
 
 if __name__ == "__main__":
     main()
