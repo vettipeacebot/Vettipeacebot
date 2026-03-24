@@ -590,13 +590,14 @@ async def on_startup(app):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # 🔥 PM PANEL (TOP PRIORITY)
+    # 🔥 PM PANEL (TOP)
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("settings", settings_cmd))
 
     app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
-    
+    app.add_handler(CallbackQueryHandler(menu))  # ✅ FIXED HERE
+
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
@@ -613,14 +614,14 @@ def main():
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
-    # 🔥 CALLBACK (AFTER MENU HANDLER)
+    # 🔥 CALLBACK (WARN BUTTON)
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
     # 🔥 EVENTS
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-    # 🔥 SAVE GROUPS (VERY IMPORTANT - KEEP LAST)
+    # 🔥 SAVE GROUP DATA (KEEP LAST)
     app.add_handler(MessageHandler(filters.ALL, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
