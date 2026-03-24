@@ -16,8 +16,19 @@ TOKEN = os.getenv("BOT_TOKEN")
 if os.path.exists("data.json"):
     with open("data.json", "r") as f:
         data = json.load(f)
+
+    # ✅ FIX missing keys
+    data.setdefault("lang", {})
+    data.setdefault("warns", {})
+    data.setdefault("filters", {})
+    data.setdefault("groups", {})
 else:
-    data = {"lang" : {}, "warns": {}, "filters": {}, "groups": {}}
+    data = {
+        "lang": {},
+        "warns": {},
+        "filters": {},
+        "groups": {}
+    }
 
 LAST_ALERT = {}
 
