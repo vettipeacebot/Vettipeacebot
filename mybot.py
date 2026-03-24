@@ -395,12 +395,15 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("alert", alert_cmd))
-app.add_handler(CommandHandler("alerton", alert_on_cmd))
-app.add_handler(CommandHandler("alertoff", alert_off_cmd))
+
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
+
+app.add_handler(CommandHandler("alerton", alert_on_cmd))
+
+app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
