@@ -240,38 +240,50 @@ async def support(update, context):
         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
     )
 
-# ================= INFO =================
+# ================= INFO (PREMIUM UI) =================
 async def info(update, context):
     q = update.callback_query
     await q.answer()
 
     text = (
-        "ναηηαкαм ∂α мαρℓα is a Bot developed by owner, it's online since 24 March 2026 and it's constantly updated!\n\n"
+        "🔱 **ναηηαкαм ∂α мαρℓα**\n"
+        "_Smart Group Management Bot_\n\n"
 
-        "Bot Version: V12\n\n"
+        "━━━━━━━━━━━━━━━\n"
+        "🤖 **Bot Information**\n"
+        "• Version : V12\n"
+        "• Online Since : 24 March 2026\n"
+        "• Status : Active & Updated\n"
+        "━━━━━━━━━━━━━━━\n\n"
 
-        "Bot Admins\n"
-        "@vettipeace\n"
-        "@tammy10117\n\n"
+        "👑 **Bot Admins**\n"
+        "• @vettipeace\n"
+        "• @tammy10117\n\n"
 
-        "⚠️ The bot staff cannot assist you in situations involving groups using this bot.\n\n"
+        "⚠️ **Important Notice**\n"
+        "Bot staff cannot assist in group-related issues.\n"
+        "Please contact your group admins.\n\n"
 
-        "Supporter\n"
-        "• Thanks to all our donors for supporting server and development expenses and all those who have reported bugs or suggested new features.\n"
-        "• We also thank all the groups who rely on our Bot for this service, we hope you will always like it.\n"
-        "• We are constantly working to improve it!\n\n"
+        "💖 **Supporters**\n"
+        "• Thanks to all donors ❤️\n"
+        "• Thanks for bug reports & suggestions\n"
+        "• Thanks to all groups using our bot\n\n"
 
-        "[💡 Privacy policy]\n"
-        "(if any doubt contact owner @vettipeace)"
+        "🚀 We are constantly improving!"
     )
 
     buttons = [
-        [InlineKeyboardButton("Bot Support", callback_data="botsupport")],
-        [InlineKeyboardButton("Bot Commands", callback_data="help")],
+        [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],
+        [InlineKeyboardButton("📜 Commands", callback_data="help")],
+        [InlineKeyboardButton("💡 Privacy Policy", url="https://t.me/vettipeace")],
         [InlineKeyboardButton("⬅️ Back", callback_data="back")]
     ]
 
-    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+    await q.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode="Markdown"
+    )
 
 # ================= HELP =================
 async def help_cmd(update, context):
