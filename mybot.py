@@ -622,7 +622,7 @@ def main():
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
     # 🔥 SAVE GROUP DATA (KEEP LAST)
-    app.add_handler(MessageHandler(filters.ALL, save_group))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
