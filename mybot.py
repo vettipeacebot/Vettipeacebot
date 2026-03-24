@@ -129,13 +129,17 @@ TEXT = {
         "settings": "Manage group Settings\n\n👉🏻 Select the group whose settings you want to change.",
     },
     "ta": {
-        "start": "🔱 வணக்கம்!\n\nஇந்த Bot உங்கள் குழுக்களை பாதுகாப்பாக நிர்வகிக்க உதவும்!\n\n🫴 என்னை குழுவில் Admin ஆக்குங்கள்!\n\n❗COMMANDS பார்க்க /help அழுத்துங்கள்!",
-        "manage": "⚙️ குழு அமைப்புகள்",
-        "support": "ஆதரவு 📩",
-        "info": "தகவல் 🤖",
-        "lang": "🇮🇳 மொழிகள் 🇮🇳",
-        "add": "➕ குழுவில் சேர்க்க ➕",
-        "settings": "குழு அமைப்புகள்\n\n👉 மாற்ற வேண்டிய குழுவை தேர்வு செய்யவும்",
+    "start": "🔱 வணக்கம்!\n\nவணக்கம்டா மாப்பிள்ளை Bot உங்கள் குழுக்களை பாதுகாப்பாக நிர்வகிக்க உதவும்!\n\n🫴 என்னை குழுவில் Admin ஆக்குங்கள்!\n\n❗கட்டளைகளை பார்க்க /help அழுத்துங்கள்!",
+    "manage": "⚙️ குழு அமைப்புகள்",
+    "support": "📩 ஆதரவு",
+    "botsupport": "🛠 உதவி",
+    "info": "🤖 தகவல்",
+    "lang": "🌐 மொழிகள்",
+    "add": "➕ குழுவில் சேர்க்க",
+    "settings": "⚙️ குழு அமைப்புகள்\n\n👉 மாற்ற வேண்டிய குழுவை தேர்வு செய்யவும்",
+    "back": "🔙 திரும்ப",
+    "commands": "📖 கட்டளைகள்",
+    "privacy": "💡 தனியுரிமை"
     }
 }
 
@@ -245,69 +249,118 @@ async def info(update, context):
     q = update.callback_query
     await q.answer()
 
-    text = (
-        "🔱 **ναηηαкαм ∂α мαρℓα**\n"
-        "_Smart Group Management Bot_\n\n"
+    uid = str(q.from_user.id)
+    lang = get_lang(uid)
+    t = TEXT[lang]
 
-        "━━━━━━━━━━━━━━━\n"
-        "🤖 **Bot Information**\n"
-        "• Version : V12\n"
-        "• Online Since : 24 March 2026\n"
-        "• Status : Active & Updated\n"
-        "━━━━━━━━━━━━━━━\n\n"
+    if lang == "ta":
+        text = (
+            "🔱 **ναηηαкαм ∂α мαρℓα**\n"
+            "_சிறந்த குழு மேலாண்மை Bot_\n\n"
 
-        "👑 **Bot Admins**\n"
-        "• @vettipeace\n"
-        "• @tammy10117\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "🤖 **Bot தகவல்**\n"
+            "• பதிப்பு : V12\n"
+            "• ஆரம்பம் : 24 மார்ச் 2026\n"
+            "• நிலை : செயல்பாட்டில்\n"
+            "━━━━━━━━━━━━━━━\n\n"
 
-        "⚠️ **Important Notice**\n"
-        "Bot staff cannot assist in group-related issues.\n"
-        "Please contact your group admins.\n\n"
+            "👑 **Bot நிர்வாகிகள்**\n"
+            "• @vettipeace\n"
+            "• @tammy10117\n\n"
 
-        "💖 **Supporters**\n"
-        "• Thanks to all donors ❤️\n"
-        "• Thanks for bug reports & suggestions\n"
-        "• Thanks to all groups using our bot\n\n"
+            "⚠️ **முக்கிய அறிவிப்பு**\n"
+            "குழு பிரச்சனைகளுக்கு உதவி வழங்கப்படாது.\n"
+            "Admin-ஐ தொடர்பு கொள்ளவும்.\n\n"
 
-        "🚀 We are constantly improving!"
-    )
+            "💖 **ஆதரவாளர்கள்**\n"
+            "• நிதியுதவி செய்த அனைவருக்கும் நன்றி ❤️\n"
+            "• பிழைகள் தெரிவித்தவர்களுக்கு நன்றி\n"
+            "• இந்த Bot பயன்படுத்தும் குழுக்களுக்கு நன்றி\n\n"
+
+            "🚀 எங்கள் Bot தொடர்ந்து மேம்படுத்தப்படுகிறது!"
+        )
+    else:
+        text = (
+            "🔱 **ναηηαкαм ∂α мαρℓα**\n"
+            "_Smart Group Management Bot_\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "🤖 **Bot Information**\n"
+            "• Version : V12\n"
+            "• Online Since : 24 March 2026\n"
+            "• Status : Active & Updated\n"
+            "━━━━━━━━━━━━━━━\n\n"
+            "👑 **Bot Admins**\n"
+            "• @vettipeace\n"
+            "• @tammy10117\n\n"
+            "⚠️ **Important Notice**\n"
+            "Bot staff cannot assist in group-related issues.\n\n"
+            "💖 **Supporters**\n"
+            "• Thanks to all donors ❤️\n"
+            "• Thanks for suggestions\n"
+            "🚀 We are improving!"
+        )
 
     buttons = [
-        [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],
-        [InlineKeyboardButton("📖 Commands", callback_data="help")],
-        [InlineKeyboardButton("💡 Privacy Policy", url="https://t.me/vettipeace")],
-        [InlineKeyboardButton("🔙 Back", callback_data="back")]
+        [InlineKeyboardButton(t["botsupport"], callback_data="botsupport")],
+        [InlineKeyboardButton(t["commands"], callback_data="help")],
+        [InlineKeyboardButton(t["privacy"], url="https://t.me/vettipeace")],
+        [InlineKeyboardButton(t["back"], callback_data="back")]
     ]
 
-    await q.edit_message_text(
-        text,
-        reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode="Markdown"
-    )
+    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
 
 # ================= BOT SUPPORT =================
 async def bot_support(update, context):
     q = update.callback_query
     await q.answer()
 
-    text = (
-        "⚠️ We do NOT provide support for **ban, mute or other things related to groups** "
-        "managed by this bot.\n\n"
-        "👉 For these requests, please contact the group administrators directly."
-    )
+    lang = get_lang(str(q.from_user.id))
 
-    buttons = [
-        [InlineKeyboardButton(" Back", callback_data="back")]
-    ]
+    if lang == "ta":
+        text = (
+            "⚠️ **இந்த Bot குழு தொடர்பான (ban, mute போன்ற) பிரச்சனைகளுக்கு உதவி வழங்காது.**\n\n"
+            "👉 தயவுசெய்து குழு Admin-ஐ தொடர்பு கொள்ளவும்."
+        )
+    else:
+        text = (
+            "⚠️ We do NOT provide support for **ban, mute or other group issues**.\n\n"
+            "👉 Contact your group admins."
+        )
 
     await q.edit_message_text(
         text,
-        reply_markup=InlineKeyboardMarkup(buttons),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
+        ]),
         parse_mode="Markdown"
     )
 
 # ================= HELP (PREMIUM UI) =================
 async def help_cmd(update, context):
+lang = get_lang(str(update.effective_user.id))
+
+if lang == "ta":
+    text = (
+        "📜 **Bot கட்டளைகள்**\n\n"
+
+        "👮 Admin Commands\n"
+        "• /warn – எச்சரிக்கை\n"
+        "• /ban – தடை\n"
+        "• /unban – தடை நீக்கு\n\n"
+
+        "🧠 Filter System\n"
+        "• /filter – auto reply\n"
+        "• /filters – பட்டியல்\n\n"
+
+        "🔔 Alert System\n"
+        "• /alert on/off\n\n"
+
+        "⚙️ Features\n"
+        "• Bad word block\n"
+        "• PM block\n"
+        )
+else:
     text = (
         "📜 **Bot Commands Guide**\n"
         "_Manage your group like a pro_\n\n"
@@ -340,24 +393,15 @@ async def help_cmd(update, context):
 
         "🚀 _More features coming soon..._"
     )
-
-    buttons = [
-        [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+buttons = [
+        [InlineKeyboardButton(TEXT[lang]["botsupport"], callback_data="botsupport")],
+        [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
     ]
 
     if update.message:
-        await update.message.reply_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="Markdown"
-        )
+        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
     else:
-        await update.callback_query.edit_message_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="Markdown"
-        )
+        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
 
 # ================= CALLBACK =================
 async def menu(update, context):
