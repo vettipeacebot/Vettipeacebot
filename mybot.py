@@ -306,17 +306,58 @@ async def bot_support(update, context):
         parse_mode="Markdown"
     )
 
-# ================= HELP =================
+# ================= HELP (PREMIUM UI) =================
 async def help_cmd(update, context):
     text = (
-        "Welcome to help menu!\n\n"
-        "Warn | Removewarn\nBan | Unban\n"
-        "Filter | Stopfilter\nFilters\nAlerton | Alertoff | Alert"
+        "📜 **Bot Commands Guide**\n"
+        "_Manage your group like a pro_\n\n"
+
+        "━━━━━━━━━━━━━━━\n"
+        "👮 **Admin Commands**\n"
+        "• /warn – Warn a user\n"
+        "• /removewarn – Reset warns\n"
+        "• /ban – Ban user\n"
+        "• /unban – Unban user\n\n"
+
+        "━━━━━━━━━━━━━━━\n"
+        "🧠 **Filter System**\n"
+        "• /filter – Add auto reply\n"
+        "• /stopfilter – Remove filter\n"
+        "• /filters – List filters\n\n"
+
+        "━━━━━━━━━━━━━━━\n"
+        "🔔 **Alert System**\n"
+        "• /alert – Check status\n"
+        "• /alert on – Enable alerts\n"
+        "• /alert off – Disable alerts\n\n"
+
+        "━━━━━━━━━━━━━━━\n"
+        "⚙️ **Other Features**\n"
+        "• Auto delete messages\n"
+        "• Bad word protection\n"
+        "• PM/DM block system\n"
+        "• Admin tag system (@admin)\n\n"
+
+        "🚀 _More features coming soon..._"
     )
+
+    buttons = [
+        [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],
+        [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+    ]
+
     if update.message:
-        await update.message.reply_text(text)
+        await update.message.reply_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode="Markdown"
+        )
     else:
-        await update.callback_query.edit_message_text(text)
+        await update.callback_query.edit_message_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode="Markdown"
+        )
 
 # ================= CALLBACK =================
 async def menu(update, context):
