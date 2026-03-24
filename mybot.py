@@ -155,7 +155,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     [InlineKeyboardButton(t["add"], url=f"https://t.me/{context.bot.username}?startgroup=true")],
     [InlineKeyboardButton(t["manage"], callback_data="manage")],
     [InlineKeyboardButton(t["support"], callback_data="support")],
-    [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],  # ✅ ADDED
     [InlineKeyboardButton(t["info"], callback_data="info")],
     [InlineKeyboardButton(t["lang"], callback_data="lang")]
 ]
@@ -328,6 +327,8 @@ async def menu(update, context):
         await manage(update, context)
     elif data_cb == "support":
         await support(update, context)
+    elif data_cb == "botsupport":
+        await bot_support(update, context)
     elif data_cb == "info":
         await info(update, context)
     elif data_cb == "lang":
