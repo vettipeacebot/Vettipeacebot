@@ -338,6 +338,10 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
 
+    # 🚫 VERY IMPORTANT FIX
+    if update.effective_chat.type == "private":
+        return
+
     await save_group(update)
 
     text = update.message.text.lower() if update.message.text else ""
