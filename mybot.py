@@ -338,7 +338,7 @@ async def bot_support(update, context):
 
 # ================= HELP (PREMIUM UI) =================
 async def help_cmd(update, context):
-lang = get_lang(str(update.effective_user.id))
+    lang = get_lang(str(update.effective_user.id))
 
 if lang == "ta":
     text = (
