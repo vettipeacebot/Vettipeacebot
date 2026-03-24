@@ -46,12 +46,18 @@ async def auto_delete(msg, delay=DELETE_AFTER):
         pass
 
 # ================= SAVE GROUP =================
-async def save_group(update):
+async def save_group(update, context=None):
     if update.effective_chat.type not in ["group", "supergroup"]:
-        return  # ❌ Ignore private chats
+        return
 
     cid = str(update.effective_chat.id)
-    data["groups"].setdefault(cid, {"alert": True})
+    title = update.effective_chat.title
+
+    data["groups"].setdefault(cid, {"alert": True, "title": title})
+    data["groups"][cid]["title"] = title
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
@@ -98,6 +104,124 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         msg = await update.message.reply_text(text)
         asyncio.create_task(auto_delete(msg))
+
+
+# ================= START (PM PANEL) =================
+async def start(update, context):
+    if update.effective_chat.type != "private":
+        return
+
+    buttons = [
+        [InlineKeyboardButton("📂 Manage your group", callback_data="manage")],
+        [InlineKeyboardButton("🆘 Support", callback_data="support")],
+        [InlineKeyboardButton("📚 Commands", callback_data="commands")]
+    ]
+
+    await update.message.reply_text(
+        "👋 Welcome to SECURITY BOT V12\n\nManage your groups easily 🔥",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+# ================= MANAGE GROUP =================
+async def manage_groups(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    uid = q.from_user.id
+    buttons = []
+
+    for cid, info in data.get("groups", {}).items():
+        try:
+            admins = await context.bot.get_chat_administrators(int(cid))
+            if uid in [a.user.id for a in admins]:
+                title = info.get("title", "Unknown Group")
+                buttons.append([InlineKeyboardButton(title, callback_data=f"grp_{cid}")])
+        except:
+            continue
+
+    if not buttons:
+        return await q.edit_message_text(
+            "⚠️ No groups found!\n\nAdd bot & send message in group."
+        )
+
+    buttons.append([InlineKeyboardButton("⬅️ Back", callback_data="back")])
+
+    await q.edit_message_text(
+        "📂 Manage your group\n\nSelect a group:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+# ================= GROUP PANEL =================
+async def group_panel(update, context, gid):
+    q = update.callback_query
+    await q.answer()
+
+    await q.edit_message_text(
+        f"⚙️ Group ID: {gid}\n\nUse commands in group:\n"
+        "/warn /ban /unban\n"
+        "/filter /alerton /alertoff",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Back", callback_data="manage")]
+        ])
+    )
+
+# ================= SUPPORT =================
+async def support(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    await q.edit_message_text(
+        "🆘 Support\n\nContact owner:\n👉 @vettipeace",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+        ])
+    )
+
+# ================= COMMANDS PAGE =================
+async def commands_page(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    await q.edit_message_text(
+        "📚 Commands\n\n"
+        "👑 Admin:\n"
+        "/warn /removewarn\n"
+        "/ban /unban\n\n"
+        "⚙️ System:\n"
+        "/alerton /alertoff\n"
+        "/filter /stopfilter\n"
+        "/filters",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+        ])
+    )
+
+# ================= MENU =================
+async def menu_handler(update, context):
+    q = update.callback_query
+    data_cb = q.data
+
+    if data_cb == "manage":
+        return await manage_groups(update, context)
+    elif data_cb.startswith("grp_"):
+        return await group_panel(update, context, data_cb.split("_")[1])
+    elif data_cb == "support":
+        return await support(update, context)
+    elif data_cb == "commands":
+        return await commands_page(update, context)
+
+# ================= BACK =================
+async def back_menu(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    buttons = [
+        [InlineKeyboardButton("📂 Manage your group", callback_data="manage")],
+        [InlineKeyboardButton("🆘 Support", callback_data="support")],
+        [InlineKeyboardButton("📚 Commands", callback_data="commands")]
+    ]
+
+    await q.edit_message_text("🏠 Main Menu", reply_markup=InlineKeyboardMarkup(buttons))
 
 # ================= WARN =================
 async def warn_user(update, context, user, reason="against group rules"):
@@ -397,6 +521,11 @@ async def on_startup(app):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
+    # 🔥 PM PANEL (ADD THIS TOP)
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
+    app.add_handler(CallbackQueryHandler(menu_handler))
+
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
@@ -413,7 +542,7 @@ def main():
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
-    # 🔥 CALLBACK
+    # 🔥 CALLBACK (KEEP THIS BELOW MENU HANDLER)
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
     # 🔥 EVENTS
