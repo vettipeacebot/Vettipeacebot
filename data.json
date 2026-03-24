@@ -1,5 +1,7 @@
 {
   "warns": {},
   "filters": {},
-  "groups": {}
+  "alert": {},
+  "groups": {},
+  "language": {}
 }
