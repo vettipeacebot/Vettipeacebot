@@ -22,9 +22,9 @@ else:
 LAST_ALERT = {}
 
 # ================= CONFIG =================
-ALERT_MSG = "⚠️📲 Do not share your phone number, photos,location with anyone.\n🍭 Stay safe have fun !"
-ALERT_INTERVAL = 30
-DELETE_AFTER = 28   # 28 secs
+ALERT_MSG = "⚠️📲 Do not share your phone number, photos, location with anyone.\n🍭 Stay safe have fun !"
+ALERT_INTERVAL = 60
+DELETE_AFTER = 58   # 58 secs
 
 # ================= BAD WORDS =================
 BAD = set([
@@ -32,10 +32,10 @@ BAD = set([
     "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity",
     "thevidya","ummbu","gommala","ommala","kotta","badu","mairu","ummbi",
-    "thayali","aatha","otha"
+    "thayali","aatha","otha","kuthi","oluka","oolu","kuuthi","sappu","suuthu","kundi","mola"
 ])
 
-PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd"]
+PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya"]
 
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=DELETE_AFTER):
@@ -119,20 +119,23 @@ async def warn_user(update, context, user, reason="against group rules"):
 
 # ================= ALERT SYSTEM =================
 async def group_alert_task(app):
-    await asyncio.sleep(5)
-
     while True:
         for cid, settings in data.get("groups", {}).items():
             if not settings.get("alert", True):
                 continue
 
+            now = asyncio.get_event_loop().time()
+            if cid in LAST_ALERT and now - LAST_ALERT[cid] < ALERT_INTERVAL:
+                continue
+
             try:
                 msg = await app.bot.send_message(int(cid), ALERT_MSG)
                 asyncio.create_task(auto_delete(msg))
+                LAST_ALERT[cid] = now
             except:
                 continue
 
-        await asyncio.sleep(ALERT_INTERVAL)
+        await asyncio.sleep(5)
 
 # ================= FILTER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -144,18 +147,13 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower() if update.message.text else ""
     user = update.message.from_user
 
+    # ❌ REMOVE THIS (DO NOT DELETE USER MSG)
+    # asyncio.create_task(auto_delete(update.message))
+
+    # ADMIN CHECK
     if await is_admin(update, context):
         return
 
-    # Auto delete all messages (except warn messages)
-    try:
-        # Only delete normal user messages (not commands)
-if not update.message.text.startswith("/"):
-    try:
-        asyncio.create_task(auto_delete(update.message))
-    except:
-        pass
-    
     # 🔥 ADMIN TAG (NO DELETE)
     if "@admin" in text:
         try:
@@ -174,14 +172,20 @@ if not update.message.text.startswith("/"):
 
     # PM BLOCK
     if any(w in text for w in PM_WORDS):
-        await update.message.delete()
+        try:
+            await update.message.delete()
+        except:
+            pass
         return
 
     # BAD WORD
     words = re.findall(r"\b[a-zA-Z]+\b", text)
     for w in words:
         if w in BAD:
-            await update.message.delete()
+            try:
+                await update.message.delete()
+            except:
+                pass
             await warn_user(update, context, user)
             return
 
@@ -190,13 +194,17 @@ if not update.message.text.startswith("/"):
     for key, content in chat_filters.items():
         if key in text:
             if content["type"] == "text":
-                await update.message.reply_text(content["value"])
+                msg = await update.message.reply_text(content["value"])
             elif content["type"] == "sticker":
-                await update.message.reply_sticker(content["value"])
+                msg = await update.message.reply_sticker(content["value"])
             elif content["type"] == "video":
-                await update.message.reply_video(content["value"])
+                msg = await update.message.reply_video(content["value"])
             elif content["type"] == "gif":
-                await update.message.reply_animation(content["value"])
+                msg = await update.message.reply_animation(content["value"])
+            else:
+                return
+
+            asyncio.create_task(auto_delete(msg))
             return
 
 # ================= BUTTON =================
@@ -239,13 +247,20 @@ async def removewarn_cmd(update, context):
 async def ban_cmd(update, context):
     if not await is_admin(update, context):
         return
+
     user = await find_user(update, context)
     if not user:
         return await update.message.reply_text("❌ User not found")
 
-    await context.bot.ban_chat_member(update.effective_chat.id, user.id)
-    msg = await update.message.reply_text(f"🚫 {get_username(user)} banned")
-    asyncio.create_task(auto_delete(msg))
+    if user.id == context.bot.id:
+        return await update.message.reply_text("❌ Cannot ban myself")
+
+    try:
+        await context.bot.ban_chat_member(update.effective_chat.id, user.id)
+        msg = await update.message.reply_text(f"🚫 {get_username(user)} banned")
+        asyncio.create_task(auto_delete(msg))
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {e}")
 
 async def unban_cmd(update, context):
     if not await is_admin(update, context):
@@ -256,7 +271,7 @@ async def unban_cmd(update, context):
 
     await context.bot.unban_chat_member(update.effective_chat.id, user.id)
     msg = await update.message.reply_text(f"✅ {get_username(user)} unbanned")
-    
+
 async def alert_cmd(update, context):
     if not await is_admin(update, context):
         return
@@ -342,7 +357,7 @@ async def list_filters(update, context):
 
 # ================= STARTUP =================
 async def on_startup(app):
-    app.create_task(group_alert_task(app))
+    asyncio.create_task(group_alert_task(app))
 
 # ================= MAIN =================
 def main():
@@ -366,9 +381,7 @@ def main():
 
     app.post_init = on_startup
 
-app.run_polling(drop_pending_updates=True)
-
-    app.run_polling()
+    app.run_polling(drop_pending_updates=True)
 
 if __name__ == "__main__":
     main()
