@@ -282,12 +282,12 @@ async def support(update, context):
         )
 
     buttons = [
-        [InlineKeyboardButton("📲 Telegram", url="https://t.me/vettipeace")],
-        [InlineKeyboardButton("📳Instagram", url="https://instagram.com/vettipeace")],
-        [InlineKeyboardButton("👻 Snapchat", url="https://snapchat.com/add/vettipeace")],
-        [InlineKeyboardButton("📧 Email", url="mailto:mohamedaflal1999786@gmail.com")],
-        [InlineKeyboardButton(t["botsupport"], callback_data="botsupport")],
-        [InlineKeyboardButton(t["back"], callback_data="back")]
+    [InlineKeyboardButton("📲 Telegram", url="https://t.me/vettipeace")],
+    [InlineKeyboardButton("📳 Instagram", url="https://instagram.com/vettipeace")],
+    [InlineKeyboardButton("📧 Email", url="mailto:mohamedaflal1999786@gmail.com")],
+    [InlineKeyboardButton(t["botsupport"], callback_data="botsupport")],
+    [InlineKeyboardButton(t["back"], callback_data="back")]
+
     ]
 
     await q.edit_message_text(
