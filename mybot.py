@@ -596,8 +596,7 @@ def main():
     app.add_handler(CommandHandler("settings", settings_cmd))
 
     app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
-    app.add_handler(CallbackQueryHandler(menu_handler))  # your main menu system
-
+    
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
