@@ -272,6 +272,37 @@ async def unban_cmd(update, context):
     await context.bot.unban_chat_member(update.effective_chat.id, user.id)
     msg = await update.message.reply_text(f"✅ {get_username(user)} unbanned")
 
+async def alert_on_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+
+    cid = str(update.effective_chat.id)
+    data["groups"].setdefault(cid, {"alert": True})
+
+    data["groups"][cid]["alert"] = True
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    msg = await update.message.reply_text("✅ Alert ENABLED")
+    asyncio.create_task(auto_delete(msg))
+
+
+async def alert_off_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+
+    cid = str(update.effective_chat.id)
+    data["groups"].setdefault(cid, {"alert": True})
+
+    data["groups"][cid]["alert"] = False
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    msg = await update.message.reply_text("❌ Alert DISABLED")
+    asyncio.create_task(auto_delete(msg))
+
 async def alert_cmd(update, context):
     if not await is_admin(update, context):
         return
@@ -364,6 +395,8 @@ def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("alert", alert_cmd))
+app.add_handler(CommandHandler("alerton", alert_on_cmd))
+app.add_handler(CommandHandler("alertoff", alert_off_cmd))
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
