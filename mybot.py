@@ -127,6 +127,10 @@ TEXT = {
         "lang": "🇮🇳 Languages 🇮🇳",
         "add": "➕ Add me to a group ➕",
         "settings": "Manage group Settings\n\n👉🏻 Select the group whose settings you want to change.",
+        "botsupport": "🛠 Bot Support",
+        "commands": "📖 Commands",
+        "privacy": "💡 Privacy Policy",
+        "back": "⬅️ Back"
     },
     "ta": {
         "start": "🔱 வணக்கம்!\n\nவணக்கம்டா மாப்பிள்ளை Bot உங்கள் குழுக்களை பாதுகாப்பாக நிர்வகிக்க உதவும்!\n\n🫴 என்னை குழுவில் Admin ஆக்குங்கள்!\n\n❗கட்டளைகளை பார்க்க /help அழுத்துங்கள்!",
