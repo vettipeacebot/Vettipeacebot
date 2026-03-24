@@ -47,6 +47,9 @@ async def auto_delete(msg, delay=DELETE_AFTER):
 
 # ================= SAVE GROUP =================
 async def save_group(update):
+    if update.effective_chat.type not in ["group", "supergroup"]:
+        return  # ❌ Ignore private chats
+
     cid = str(update.effective_chat.id)
     data["groups"].setdefault(cid, {"alert": True})
 
