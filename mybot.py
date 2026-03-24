@@ -169,7 +169,7 @@ async def language_menu(update, context):
     buttons = [
         [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
         [InlineKeyboardButton("🇮🇳 Tamil", callback_data="lang_ta")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
     ]
 
     await q.edit_message_text("🌐 Select Language", reply_markup=InlineKeyboardMarkup(buttons))
@@ -205,7 +205,7 @@ async def manage(update, context):
     if not buttons:
         return await q.edit_message_text("⚠️ No groups found!")
 
-    buttons.append([InlineKeyboardButton("⬅️ Back", callback_data="back")])
+    buttons.append([InlineKeyboardButton("🔙 Back", callback_data="back")])
 
     await q.edit_message_text("Select your group:", reply_markup=InlineKeyboardMarkup(buttons))
 
@@ -237,7 +237,7 @@ async def support(update, context):
     await q.edit_message_text(
         "If you want more information contact developer:\n\n"
         "Telegram: @vettipeace\nInstagram: @vettipeace\nSnapchat: @vettipeace\nEmail: mohamedaflal1999786@gmail.com",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("⬅️ Back", callback_data="back")]])
+        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back")]])
     )
 
 # ================= INFO (PREMIUM UI) =================
@@ -274,9 +274,30 @@ async def info(update, context):
 
     buttons = [
         [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],
-        [InlineKeyboardButton("📜 Commands", callback_data="help")],
+        [InlineKeyboardButton("📖 Commands", callback_data="help")],
         [InlineKeyboardButton("💡 Privacy Policy", url="https://t.me/vettipeace")],
-        [InlineKeyboardButton("⬅️ Back", callback_data="back")]
+        [InlineKeyboardButton("🔙 Back", callback_data="back")]
+    ]
+
+    await q.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode="Markdown"
+    )
+
+# ================= BOT SUPPORT =================
+async def bot_support(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    text = (
+        "⚠️ We do NOT provide support for **ban, mute or other things related to groups** "
+        "managed by this bot.\n\n"
+        "👉 For these requests, please contact the group administrators directly."
+    )
+
+    buttons = [
+        [InlineKeyboardButton(" Back", callback_data="back")]
     ]
 
     await q.edit_message_text(
