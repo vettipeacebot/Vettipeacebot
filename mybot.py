@@ -237,15 +237,63 @@ async def settings_cmd(update, context):
 
     await update.message.reply_text(t["settings"], reply_markup=InlineKeyboardMarkup(buttons))
 
-# ================= SUPPORT =================
+# ================= SUPPORT (PRO MAX UI) =================
 async def support(update, context):
     q = update.callback_query
     await q.answer()
 
+    uid = str(q.from_user.id)
+    lang = get_lang(uid)
+    t = TEXT[lang]
+
+    if lang == "ta":
+        text = (
+            "📩 **ஆதரவு மையம்**\n"
+            "_உதவி மற்றும் தொடர்புக்கு_\n\n"
+
+            "━━━━━━━━━━━━━━━\n"
+            "🎯 **Developer**\n"
+            "• நேரடி தொடர்புக்கு கீழே உள்ள பட்டன்களை பயன்படுத்தவும்\n"
+            "━━━━━━━━━━━━━━━\n\n"
+
+            "⚠️ **கவனம்**\n"
+            "• குழு பிரச்சனைகள் (ban, mute போன்றவை)\n"
+            "  ஆதரவு வழங்கப்படாது\n"
+            "• தயவுசெய்து குழு Admin-ஐ தொடர்பு கொள்ளவும்\n\n"
+
+            "💡 தேவையெனில் Developer-ஐ தொடர்பு கொள்ளுங்கள்"
+        )
+    else:
+        text = (
+            "📩 **Support Center**\n"
+            "_Get help & contact developer_\n\n"
+
+            "━━━━━━━━━━━━━━━\n"
+            "🎯 **Developer**\n"
+            "• Use the buttons below to contact directly\n"
+            "━━━━━━━━━━━━━━━\n\n"
+
+            "⚠️ **Important Notice**\n"
+            "• We do NOT support group issues\n"
+            "  (ban, mute, etc.)\n"
+            "• Contact your group admins\n\n"
+
+            "💡 Reach out to developer if needed"
+        )
+
+    buttons = [
+        [InlineKeyboardButton("📲 Telegram", url="https://t.me/vettipeace")],
+        [InlineKeyboardButton("📳Instagram", url="https://instagram.com/vettipeace")],
+        [InlineKeyboardButton("👻 Snapchat", url="https://snapchat.com/add/vettipeace")],
+        [InlineKeyboardButton("📧 Email", url="mailto:mohamedaflal1999786@gmail.com")],
+        [InlineKeyboardButton(t["botsupport"], callback_data="botsupport")],
+        [InlineKeyboardButton(t["back"], callback_data="back")]
+    ]
+
     await q.edit_message_text(
-        "If you want more information contact developer:\n\n"
-        "Telegram: @vettipeace\nInstagram: @vettipeace\nSnapchat: @vettipeace\nEmail: mohamedaflal1999786@gmail.com",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="back")]])
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode="Markdown"
     )
 
 # ================= INFO (PREMIUM UI) =================
