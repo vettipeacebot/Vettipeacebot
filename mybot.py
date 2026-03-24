@@ -152,12 +152,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     t = TEXT[lang]
 
     buttons = [
-        [InlineKeyboardButton(t["add"], url=f"https://t.me/{context.bot.username}?startgroup=true")],
-        [InlineKeyboardButton(t["manage"], callback_data="manage")],
-        [InlineKeyboardButton(t["support"], callback_data="support")],
-        [InlineKeyboardButton(t["info"], callback_data="info")],
-        [InlineKeyboardButton(t["lang"], callback_data="lang")]
-    ]
+    [InlineKeyboardButton(t["add"], url=f"https://t.me/{context.bot.username}?startgroup=true")],
+    [InlineKeyboardButton(t["manage"], callback_data="manage")],
+    [InlineKeyboardButton(t["support"], callback_data="support")],
+    [InlineKeyboardButton("🛠 Bot Support", callback_data="botsupport")],  # ✅ ADDED
+    [InlineKeyboardButton(t["info"], callback_data="info")],
+    [InlineKeyboardButton(t["lang"], callback_data="lang")]
+]
 
     await update.message.reply_text(t["start"], reply_markup=InlineKeyboardMarkup(buttons))
 
