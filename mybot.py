@@ -594,16 +594,27 @@ async def on_startup(app):
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
+    # 🔥 PM COMMANDS
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_cmd))
+    app.add_handler(CommandHandler("settings", settings_cmd))
+
     # 🔥 CALLBACK HANDLERS (VERY IMPORTANT ORDER)
 
-# 1️⃣ BACK BUTTON (top priority)
-app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
+    # 1️⃣ BACK BUTTON
+    app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
 
-# 2️⃣ REMOVE WARN BUTTON (specific pattern)
-app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
+    # 2️⃣ REMOVE WARN
+    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-# 3️⃣ MAIN MENU SYSTEM (general buttons)
-app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*)$"))
+    # 3️⃣ TOGGLE ALERT (NEW)
+    app.add_handler(CallbackQueryHandler(toggle_alert_btn, pattern="togglealert_"))
+
+    # 4️⃣ MAIN MENU SYSTEM
+    app.add_handler(CallbackQueryHandler(
+        menu,
+        pattern="^(manage|support|info|lang|help|lang_.*|grp_.*|botsupport)$"
+    ))
 
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
