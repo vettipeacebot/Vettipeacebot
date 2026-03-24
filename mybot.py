@@ -340,68 +340,77 @@ async def bot_support(update, context):
 async def help_cmd(update, context):
     lang = get_lang(str(update.effective_user.id))
 
-if lang == "ta":
-    text = (
-        "📜 **Bot கட்டளைகள்**\n\n"
+    if lang == "ta":
+        text = (
+            "📜 **Bot கட்டளைகள்**\n\n"
 
-        "👮 Admin Commands\n"
-        "• /warn – எச்சரிக்கை\n"
-        "• /ban – தடை\n"
-        "• /unban – தடை நீக்கு\n\n"
+            "👮 Admin Commands\n"
+            "• /warn – எச்சரிக்கை\n"
+            "• /ban – தடை\n"
+            "• /unban – தடை நீக்கு\n\n"
 
-        "🧠 Filter System\n"
-        "• /filter – auto reply\n"
-        "• /filters – பட்டியல்\n\n"
+            "🧠 Filter System\n"
+            "• /filter – auto reply\n"
+            "• /filters – பட்டியல்\n\n"
 
-        "🔔 Alert System\n"
-        "• /alert on/off\n\n"
+            "🔔 Alert System\n"
+            "• /alert on/off\n\n"
 
-        "⚙️ Features\n"
-        "• Bad word block\n"
-        "• PM block\n"
+            "⚙️ Features\n"
+            "• Bad word block\n"
+            "• PM block\n"
         )
-else:
-    text = (
-        "📜 **Bot Commands Guide**\n"
-        "_Manage your group like a pro_\n\n"
+    else:
+        text = (
+            "📜 **Bot Commands Guide**\n"
+            "_Manage your group like a pro_\n\n"
 
-        "━━━━━━━━━━━━━━━\n"
-        "👮 **Admin Commands**\n"
-        "• /warn – Warn a user\n"
-        "• /removewarn – Reset warns\n"
-        "• /ban – Ban user\n"
-        "• /unban – Unban user\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "👮 **Admin Commands**\n"
+            "• /warn – Warn a user\n"
+            "• /removewarn – Reset warns\n"
+            "• /ban – Ban user\n"
+            "• /unban – Unban user\n\n"
 
-        "━━━━━━━━━━━━━━━\n"
-        "🧠 **Filter System**\n"
-        "• /filter – Add auto reply\n"
-        "• /stopfilter – Remove filter\n"
-        "• /filters – List filters\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "🧠 **Filter System**\n"
+            "• /filter – Add auto reply\n"
+            "• /stopfilter – Remove filter\n"
+            "• /filters – List filters\n\n"
 
-        "━━━━━━━━━━━━━━━\n"
-        "🔔 **Alert System**\n"
-        "• /alert – Check status\n"
-        "• /alert on – Enable alerts\n"
-        "• /alert off – Disable alerts\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "🔔 **Alert System**\n"
+            "• /alert – Check status\n"
+            "• /alert on – Enable alerts\n"
+            "• /alert off – Disable alerts\n\n"
 
-        "━━━━━━━━━━━━━━━\n"
-        "⚙️ **Other Features**\n"
-        "• Auto delete messages\n"
-        "• Bad word protection\n"
-        "• PM/DM block system\n"
-        "• Admin tag system (@admin)\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "⚙️ **Other Features**\n"
+            "• Auto delete messages\n"
+            "• Bad word protection\n"
+            "• PM/DM block system\n"
+            "• Admin tag system (@admin)\n\n"
 
-        "🚀 _More features coming soon..._"
-    )
-buttons = [
+            "🚀 _More features coming soon..._"
+        )
+
+    buttons = [
         [InlineKeyboardButton(TEXT[lang]["botsupport"], callback_data="botsupport")],
         [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
     ]
 
     if update.message:
-        await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
+        await update.message.reply_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode="Markdown"
+        )
     else:
-        await update.callback_query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons), parse_mode="Markdown")
+        await update.callback_query.edit_message_text(
+            text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            parse_mode="Markdown"
+        )
 
 # ================= CALLBACK =================
 async def menu(update, context):
