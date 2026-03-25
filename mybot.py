@@ -7,10 +7,8 @@ import re
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
-    MessageHandler, CallbackQueryHandler, filters
+    MessageHandler, CallbackQueryHandler, ChatMemberHandler, filters
 )
-
-TOKEN = os.getenv("BOT_TOKEN")
 
 # ================= DATA =================
 if os.path.exists("data.json"):
@@ -69,6 +67,23 @@ async def save_group(update, context=None):
 
     with open("data.json", "w") as f:
         json.dump(data, f)
+
+# ================= AUTO SAVE GROUP =================
+async def bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+
+    if chat.type in ["group", "supergroup"]:
+        cid = str(chat.id)
+
+        data["groups"][cid] = {
+            "title": chat.title,
+            "alert": True
+        }
+
+        with open("data.json", "w") as f:
+            json.dump(data, f)
+
+        print(f"✅ Auto saved group: {chat.title}")
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
@@ -867,6 +882,8 @@ def main():
 
     # 🔥 TOGGLE ALERT
     app.add_handler(CallbackQueryHandler(toggle_alert, pattern="^toggle_"))
+
+app.add_handler(ChatMemberHandler(bot_added, ChatMemberHandler.MY_CHAT_MEMBER))
 
     # 🔥 MENU
     app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
