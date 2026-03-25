@@ -829,23 +829,24 @@ def main():
 
     # 🔥 CALLBACK HANDLERS (VERY IMPORTANT ORDER)
 
-    # 1️⃣ BACK BUTTON
-    app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
+    # ----------------------
+# Dedicated Callback Handlers
+# ----------------------
 
-    # 2️⃣ REMOVE WARN
-    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
+# Back Button
+app.add_handler(CallbackQueryHandler(back_menu, pattern="^back$"))
 
-    # 3️⃣ MAIN MENU SYSTEM
-    app.add_handler(CallbackQueryHandler(
-        menu,
-        pattern="^(manage|support|info|lang|help|lang_.*|grp_.*|botsupport)$"
-    ))
+# Remove Warn Button
+app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="^rw_"))
 
-    # Bot Support (dedicated)
+# Bot Support (dedicated)
 app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
 
-    # 4️⃣ EMAIL SUPPORT CALLBACK
-    app.add_handler(CallbackQueryHandler(email_support_callback, pattern="email_support"))
+# Email Support (dedicated)
+app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
+
+# Menu Buttons (manage, support, info, lang, help, lang_xx, grp_xxx)
+app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
 
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
