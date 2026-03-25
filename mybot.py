@@ -530,7 +530,7 @@ async def menu(update, context):
     elif data_cb == "help":
         await help_cmd(update, context)
     elif data_cb.startswith("grp_"):
-    gid = data_cb.split("_")[1]
+        gid = data_cb.split("_")[1]
         await group_settings(update, context, gid)
 
 # ================= BACK =================
