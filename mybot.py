@@ -904,5 +904,5 @@ def main():
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
-    app.post_init = on_startup
-    app.run_polling(drop_pending_updates=True)
+    app.run_polling(on_startup=on_startup)
+ app.run_polling(drop_pending_updates=True)
