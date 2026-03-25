@@ -83,9 +83,9 @@ async def bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
         }
 
         with open("data.json", "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
 
-        print(f"✅ Auto saved group: {chat.title}")
+        print(f"✅ Group saved: {chat.title} ({cid})")
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
@@ -216,25 +216,15 @@ async def manage(update, context):
     q = update.callback_query
     await q.answer()
 
-    uid = q.from_user.id
     buttons = []
 
     for gid, info in data["groups"].items():
-        try:
-            member = await context.bot.get_chat_member(int(gid), uid)
-
-            # ✅ Check if user is admin/creator
-            if member.status in ["administrator", "creator"]:
-                buttons.append([
-                    InlineKeyboardButton(info.get("title", "Unknown Group"), callback_data=f"grp_{gid}")
-                ])
-
-        except Exception as e:
-            print(f"Manage Error ({gid}):", e)
-            continue
+        buttons.append([
+            InlineKeyboardButton(info.get("title", "Unknown"), callback_data=f"grp_{gid}")
+        ])
 
     if not buttons:
-        return await q.edit_message_text("⚠️ No groups found or bot not admin!")
+        return await q.edit_message_text("⚠️ No groups saved!")
 
     buttons.append([InlineKeyboardButton("🔙 Back", callback_data="back")])
 
