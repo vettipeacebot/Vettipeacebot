@@ -237,63 +237,79 @@ async def settings_cmd(update, context):
 
     await update.message.reply_text(t["settings"], reply_markup=InlineKeyboardMarkup(buttons))
 
-# ================= SUPPORT (PRO MAX UI) =================
+# ================= HELPER FUNCTIONS =================
+def escape_markdown_v2(text):
+    """
+    Escapes special characters for Telegram MarkdownV2.
+    """
+    escape_chars = r'_*[]()~`>#+-=|{}.!'
+    return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
+
+# ================= SUPPORT (PRO MAX UI CLEAN) =================
 async def support(update, context):
     q = update.callback_query
     await q.answer()
 
     uid = str(q.from_user.id)
-    lang = get_lang(uid)
-    t = TEXT[lang]
+    lang = get_lang(uid)  # your function to get user language
+    t = TEXT[lang]        # your TEXT dictionary
 
     if lang == "ta":
-        text = (
-            "📩 **ஆதரவு மையம்**\n"
+        raw_text = (
+            "📩 *ஆதரவு மையம்*\n"
             "_உதவி மற்றும் தொடர்புக்கு_\n\n"
-
             "━━━━━━━━━━━━━━━\n"
-            "🎯 **Developer**\n"
+            "🎯 *Developer*\n"
             "• நேரடி தொடர்புக்கு கீழே உள்ள பட்டன்களை பயன்படுத்தவும்\n"
             "━━━━━━━━━━━━━━━\n\n"
-
-            "⚠️ **கவனம்**\n"
-            "• குழு பிரச்சனைகள் (ban, mute போன்றவை)\n"
-            "  ஆதரவு வழங்கப்படாது\n"
+            "⚠️ *கவனம்*\n"
+            "• குழு பிரச்சனைகள் (ban, mute போன்றவை) ஆதரவு வழங்கப்படாது\n"
             "• தயவுசெய்து குழு Admin-ஐ தொடர்பு கொள்ளவும்\n\n"
-
             "💡 தேவையெனில் Developer-ஐ தொடர்பு கொள்ளுங்கள்"
         )
     else:
-        text = (
-            "📩 **Support Center**\n"
+        raw_text = (
+            "📩 *Support Center*\n"
             "_Get help & contact developer_\n\n"
-
             "━━━━━━━━━━━━━━━\n"
-            "🎯 **Developer**\n"
+            "🎯 *Developer*\n"
             "• Use the buttons below to contact directly\n"
             "━━━━━━━━━━━━━━━\n\n"
-
-            "⚠️ **Important Notice**\n"
-            "• We do NOT support group issues\n"
-            "  (ban, mute, etc.)\n"
+            "⚠️ *Important Notice*\n"
+            "• We do NOT support group issues (ban, mute, etc.)\n"
             "• Contact your group admins\n\n"
-
             "💡 Reach out to developer if needed"
         )
 
-    buttons = [
-    [InlineKeyboardButton("📲 Telegram", url="https://t.me/vettipeace")],
-    [InlineKeyboardButton("📳 Instagram", url="https://instagram.com/vettipeace")],
-    [InlineKeyboardButton("📧 Email", url="mailto:mohamedaflal1999786@gmail.com")],
-    [InlineKeyboardButton(t["botsupport"], callback_data="botsupport")],
-    [InlineKeyboardButton(t["back"], callback_data="back")]
+    text = escape_markdown_v2(raw_text)
 
+    buttons = [
+        [
+            InlineKeyboardButton("📲 Telegram", url="https://t.me/vettipeace"),
+            InlineKeyboardButton("📳 Instagram", url="https://instagram.com/vettipeace")
+        ],
+        [
+            InlineKeyboardButton("📧 Email", callback_data="email_support"),
+            InlineKeyboardButton(escape_markdown_v2(t["back"]), callback_data="back")
+        ]
     ]
 
     await q.edit_message_text(
         text,
         reply_markup=InlineKeyboardMarkup(buttons),
-        parse_mode="Markdown"
+        parse_mode="MarkdownV2"
+    )
+
+# ----------------------
+# Handle the email callback
+async def email_support_callback(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    await q.message.reply_text(
+        "📧 To contact the developer via email, use:\n"
+        "mohamedaflal1999786@gmail.com\n\n"
+        "You can copy and paste this in your email client."
     )
 
 # ================= INFO (PREMIUM UI) =================
@@ -823,6 +839,8 @@ def main():
         menu,
         pattern="^(manage|support|info|lang|help|lang_.*|grp_.*|botsupport)$"
     ))
+
+application.add_handler(CallbackQueryHandler(email_support_callback, pattern="email_support"))
 
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
