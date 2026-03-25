@@ -861,36 +861,27 @@ def main():
 
     # 🔥 CALLBACK HANDLERS
 
-    # Back Button
     app.add_handler(CallbackQueryHandler(back_menu, pattern="^back$"))
-
-    # Remove Warn Button
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="^rw_"))
-
-    # Bot Support
     app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
-
-    # Email Support
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
 
-    # ✅ FIXED PLACE (INSIDE main)
+    # ✅ toggle
     app.add_handler(CallbackQueryHandler(toggle_alert, pattern="^toggle_"))
 
-    # Menu Buttons
+    # menu
     app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
 
-    # 🔥 ALERT COMMANDS
+    # 🔥 COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
-    # 🔥 ADMIN COMMANDS
     app.add_handler(CommandHandler("warn", warn_cmd))
     app.add_handler(CommandHandler("removewarn", removewarn_cmd))
     app.add_handler(CommandHandler("ban", ban_cmd))
     app.add_handler(CommandHandler("unban", unban_cmd))
 
-    # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
@@ -898,11 +889,12 @@ def main():
     # 🔥 EVENTS
     app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
-
-    # 🔥 SAVE GROUP DATA
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
     app.run_polling(on_startup=on_startup)
- app.run_polling(drop_pending_updates=True)
+
+
+if __name__ == "__main__":
+    main()
