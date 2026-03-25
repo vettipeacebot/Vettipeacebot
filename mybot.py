@@ -46,7 +46,7 @@ BAD = set([
     "thayali","aatha","otha","kuthi","oluka","oolu","kuuthi","sappu","suuthu","kundi","mola"
 ])
 
-PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya"]
+PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya","message","msg"]
 
 # ================= AUTO DELETE =================
 async def auto_delete(msg, delay=DELETE_AFTER):
@@ -531,7 +531,7 @@ async def menu(update, context):
         await help_cmd(update, context)
     elif data_cb.startswith("grp_"):
     gid = data_cb.split("_")[1]
-    await group_settings(update, context, gid)
+        await group_settings(update, context, gid)
 
 # ================= BACK =================
 async def back_menu(update, context):
