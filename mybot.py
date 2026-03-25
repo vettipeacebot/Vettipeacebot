@@ -883,7 +883,9 @@ def main():
     # 🔥 TOGGLE ALERT
     app.add_handler(CallbackQueryHandler(toggle_alert, pattern="^toggle_"))
 
-app.add_handler(ChatMemberHandler(bot_added, ChatMemberHandler.MY_CHAT_MEMBER))
+    app.add_handler(ChatMemberHandler(bot_
+    added, ChatMemberHandler.MY_CHAT_MEMB
+    ER))
 
     # 🔥 MENU
     app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
