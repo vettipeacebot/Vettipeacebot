@@ -835,13 +835,14 @@ def main():
     # 2️⃣ REMOVE WARN
     app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="rw_"))
 
-    # 4️⃣ MAIN MENU SYSTEM
+    # 3️⃣ MAIN MENU SYSTEM
     app.add_handler(CallbackQueryHandler(
         menu,
         pattern="^(manage|support|info|lang|help|lang_.*|grp_.*|botsupport)$"
     ))
 
-application.add_handler(CallbackQueryHandler(email_support_callback, pattern="email_support"))
+    # 4️⃣ EMAIL SUPPORT CALLBACK
+    app.add_handler(CallbackQueryHandler(email_support_callback, pattern="email_support"))
 
     # 🔥 ALERT COMMANDS
     app.add_handler(CommandHandler("alert", alert_cmd))
