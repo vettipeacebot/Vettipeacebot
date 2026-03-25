@@ -457,23 +457,22 @@ async def help_cmd(update, context):
             "🚀 _More features coming soon..._"
         )
 
-    buttons =
-        
-        [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
-    
+    buttons = [
+    [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
+]
 
-    if update.message:
-        await update.message.reply_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="Markdown"
-        )
-    else:
-        await update.callback_query.edit_message_text(
-            text,
-            reply_markup=InlineKeyboardMarkup(buttons),
-            parse_mode="Markdown"
-        )
+if update.message:
+    await update.message.reply_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode="HTML"  # Use HTML instead of Markdown to avoid escaping issues
+    )
+else:
+    await update.callback_query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(buttons),
+        parse_mode="HTML"  # Use HTML here too
+    )
 
 # ================= CALLBACK =================
 async def menu(update, context):
