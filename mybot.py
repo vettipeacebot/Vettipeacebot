@@ -841,6 +841,9 @@ def main():
         pattern="^(manage|support|info|lang|help|lang_.*|grp_.*|botsupport)$"
     ))
 
+    # Bot Support (dedicated)
+app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
+
     # 4️⃣ EMAIL SUPPORT CALLBACK
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="email_support"))
 
