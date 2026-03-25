@@ -217,6 +217,41 @@ async def manage(update, context):
 
     await q.edit_message_text("Select your group:", reply_markup=InlineKeyboardMarkup(buttons))
 
+# ================= GROUP SETTINGS =================
+async def group_settings(update, context, gid):
+    q = update.callback_query
+    await q.answer()
+
+    info = data["groups"].get(gid)
+    if not info:
+        return await q.edit_message_text("❌ Group not found")
+
+    title = info["title"]
+    alert = "ON ✅" if info.get("alert", True) else "OFF ❌"
+
+    text = f"⚙️ Settings for: {title}\n\n🔔 Alert: {alert}"
+
+    buttons = [
+        [InlineKeyboardButton("🔔 Toggle Alert", callback_data=f"toggle_{gid}")],
+        [InlineKeyboardButton("🔙 Back", callback_data="manage")]
+    ]
+
+    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
+
+# ================= TOGGLE ALERT =================
+async def toggle_alert(update, context):
+    q = update.callback_query
+    await q.answer()
+
+    gid = q.data.split("_")[1]
+
+    data["groups"][gid]["alert"] = not data["groups"][gid].get("alert", True)
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    await group_settings(update, context, gid)
+
 # ================= SETTINGS COMMAND =================
 async def settings_cmd(update, context):
     if update.effective_chat.type != "private":
@@ -494,6 +529,9 @@ async def menu(update, context):
         await set_language(update, context, data_cb.split("_")[1])
     elif data_cb == "help":
         await help_cmd(update, context)
+    elif data_cb.startswith("grp_"):
+    gid = data_cb.split("_")[1]
+    await group_settings(update, context, gid)
 
 # ================= BACK =================
 async def back_menu(update, context):
@@ -838,6 +876,8 @@ def main():
 
     # Email Support (dedicated)
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
+
+app.add_handler(CallbackQueryHandler(toggle_alert, pattern="^toggle_"))
 
     # Menu Buttons (manage, support, info, lang, help, lang_xx, grp_xxx)
     app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
