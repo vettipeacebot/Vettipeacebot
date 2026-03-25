@@ -384,24 +384,25 @@ async def bot_support(update, context):
     await q.answer()
 
     lang = get_lang(str(q.from_user.id))
+    t = TEXT[lang]
 
     if lang == "ta":
         text = (
-            "⚠️ **இந்த Bot குழு தொடர்பான (ban, mute போன்ற) பிரச்சனைகளுக்கு உதவி வழங்காது.**\n\n"
+            "⚠️ *இந்த Bot குழு தொடர்பான (ban, mute போன்ற) பிரச்சனைகளுக்கு உதவி வழங்காது.*\n\n"
             "👉 தயவுசெய்து குழு Admin-ஐ தொடர்பு கொள்ளவும்."
         )
     else:
         text = (
-            "⚠️ We do NOT provide support for **ban, mute or other group issues**.\n\n"
+            "⚠️ *We do NOT provide support for ban, mute or other group issues.*\n\n"
             "👉 Contact your group admins."
         )
 
     await q.edit_message_text(
         text,
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
+            [InlineKeyboardButton(t["back"], callback_data="back")]
         ]),
-        parse_mode="Markdown"
+        parse_mode="MarkdownV2"
     )
 
 # ================= HELP (PREMIUM UI) =================
