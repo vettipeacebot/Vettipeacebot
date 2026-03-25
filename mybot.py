@@ -221,18 +221,27 @@ async def manage(update, context):
 
     for gid, info in data["groups"].items():
         try:
-            admins = await context.bot.get_chat_administrators(int(gid))
-            if uid in [a.user.id for a in admins]:
-                buttons.append([InlineKeyboardButton(info["title"], callback_data=f"grp_{gid}")])
-        except:
+            member = await context.bot.get_chat_member(int(gid), uid)
+
+            # ✅ Check if user is admin/creator
+            if member.status in ["administrator", "creator"]:
+                buttons.append([
+                    InlineKeyboardButton(info.get("title", "Unknown Group"), callback_data=f"grp_{gid}")
+                ])
+
+        except Exception as e:
+            print(f"Manage Error ({gid}):", e)
             continue
 
     if not buttons:
-        return await q.edit_message_text("⚠️ No groups found!")
+        return await q.edit_message_text("⚠️ No groups found or bot not admin!")
 
     buttons.append([InlineKeyboardButton("🔙 Back", callback_data="back")])
 
-    await q.edit_message_text("Select your group:", reply_markup=InlineKeyboardMarkup(buttons))
+    await q.edit_message_text(
+        "Select your group:",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
 
 # ================= GROUP SETTINGS =================
 async def group_settings(update, context, gid):
