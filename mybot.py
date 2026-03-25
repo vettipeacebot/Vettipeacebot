@@ -130,7 +130,7 @@ TEXT = {
         "botsupport": "🛠 Bot Support",
         "commands": "📖 Commands",
         "privacy": "💡 Privacy Policy",
-        "back": "⬅️ Back"
+        "back": "🔙 Back"
     },
     "ta": {
         "start": "🔱 வணக்கம்!\n\nவணக்கம்டா மாப்பிள்ளை Bot உங்கள் குழுக்களை பாதுகாப்பாக நிர்வகிக்க உதவும்!\n\n🫴 என்னை குழுவில் Admin ஆக்குங்கள்!\n\n❗கட்டளைகளை பார்க்க /help அழுத்துங்கள்!",
@@ -138,7 +138,7 @@ TEXT = {
         "support": "📩 ஆதரவு",
         "botsupport": "🛠 உதவி",
         "info": "🤖 தகவல்",
-        "lang": "🌐 மொழிகள்",
+        "lang": "🇮🇳 மொழிகள்",
         "add": "➕ குழுவில் சேர்க்க",
         "settings": "⚙️ குழு அமைப்புகள்\n\n👉 மாற்ற வேண்டிய குழுவை தேர்வு செய்யவும்",
         "back": "🔙 திரும்ப",
@@ -457,10 +457,10 @@ async def help_cmd(update, context):
             "🚀 _More features coming soon..._"
         )
 
-    buttons = [
-        [InlineKeyboardButton(TEXT[lang]["botsupport"], callback_data="botsupport")],
+    buttons =
+        
         [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
-    ]
+    
 
     if update.message:
         await update.message.reply_text(
