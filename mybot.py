@@ -43,7 +43,7 @@ BAD = set([
     "cock","pussy","slut","whore","rape","masturbate","boobs","penis",
     "punda","sunni","potta","thevudiya","thayoli","oombu","nudity",
     "thevidya","ummbu","gommala","ommala","kotta","badu","mairu","ummbi",
-    "thayali","aatha","otha","kuthi","oluka","oolu","kuuthi","sappu","suuthu","kundi","mola"
+    "thayali","aatha","otha","kuthi","oluka","oolu","kuuthi","sappu","suuthu","kundi","mola","service"
 ])
 
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya","message","msg"]
