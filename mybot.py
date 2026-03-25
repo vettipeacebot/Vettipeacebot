@@ -10,6 +10,8 @@ from telegram.ext import (
     MessageHandler, CallbackQueryHandler, ChatMemberHandler, filters
 )
 
+TOKEN = os.getenv("BOT_TOKEN")
+
 # ================= DATA =================
 if os.path.exists("data.json"):
     with open("data.json", "r") as f:
