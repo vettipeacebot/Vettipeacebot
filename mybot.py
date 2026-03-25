@@ -881,8 +881,7 @@ def main():
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
 
     # 🔥 AUTO SAVE GROUP WHEN BOT ADDED
-
-app.add_handler(ChatMemberHandler(bot_added, ChatMemberHandler.MY_CHAT_MEMBER))
+    app.add_handler(ChatMemberHandler(bot_added, ChatMemberHandler.MY_CHAT_MEMBER))
 
     # 🔥 TOGGLE ALERT
     app.add_handler(CallbackQueryHandler(toggle_alert, pattern="^toggle_"))
@@ -913,7 +912,7 @@ app.add_handler(ChatMemberHandler(bot_added, ChatMemberHandler.MY_CHAT_MEMBER))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
-    # 🔥 BACKGROUND TASK FIX
+    # 🔥 BACKGROUND TASK
     async def start_background(app):
         import asyncio
         asyncio.create_task(group_alert_task(app))
