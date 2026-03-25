@@ -456,24 +456,38 @@ async def help_cmd(update, context):
 
     if lang == "ta":
         text = (
-            "📜 **Bot கட்டளைகள்**\n\n"
+            "📜 **Bot கட்டளைகள் வழிகாட்டி**\n"
+            "_உங்கள் குழுவை எளிதாக நிர்வகிக்க_\n\n"
 
-            "👮 Admin Commands\n"
-            "• /warn – எச்சரிக்கை\n"
-            "• /ban – தடை\n"
+            "━━━━━━━━━━━━━━━\n"
+            "👮 **Admin கட்டளைகள்**\n"
+            "• /warn – பயனருக்கு எச்சரிக்கை\n"
+            "• /removewarn – எச்சரிக்கை நீக்கு\n"
+            "• /ban – பயனரை தடை செய்\n"
             "• /unban – தடை நீக்கு\n\n"
 
-            "🧠 Filter System\n"
-            "• /filter – auto reply\n"
-            "• /filters – பட்டியல்\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "🧠 **Filter System**\n"
+            "• /filter – auto reply சேர்க்க\n"
+            "• /stopfilter – filter நீக்கு\n"
+            "• /filters – அனைத்து filter பட்டியல்\n\n"
 
-            "🔔 Alert System\n"
-            "• /alert on/off\n\n"
+            "━━━━━━━━━━━━━━━\n"
+            "🔔 **Alert System**\n"
+            "• /alert – நிலை பார்க்க\n"
+            "• /alert on – Alert இயக்க\n"
+            "• /alert off – Alert நிறுத்த\n\n"
 
-            "⚙️ Features\n"
-            "• Bad word block\n"
-            "• PM block\n"
+            "━━━━━━━━━━━━━━━\n"
+            "⚙️ **மற்ற அம்சங்கள்**\n"
+            "• Auto delete messages\n"
+            "• கெட்ட வார்த்தைகள் தடை\n"
+            "• PM/DM தடை அமைப்பு\n"
+            "• Admin tag system (@admin)\n\n"
+
+            "🚀 _மேலும் அம்சங்கள் விரைவில் வரும்..._"
         )
+
     else:
         text = (
             "📜 **Bot Commands Guide**\n"
@@ -508,7 +522,6 @@ async def help_cmd(update, context):
             "🚀 _More features coming soon..._"
         )
 
-    # ✅ Only keep the Back button
     buttons = [
         [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
     ]
