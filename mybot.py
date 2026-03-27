@@ -772,15 +772,14 @@ def main():
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
-
     # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
     # 🔥 EVENTS
-app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
-app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
