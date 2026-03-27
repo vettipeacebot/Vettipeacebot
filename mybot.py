@@ -55,14 +55,6 @@ NEWS_FEEDS = [
 
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya","message","msg"]
 
-# ================= AUTO DELETE =================
-async def auto_delete(msg, delay=DELETE_AFTER):
-    await asyncio.sleep(delay)
-    try:
-        await msg.delete()
-    except:
-        pass
-
 # ================= SAVE GROUP =================
 async def save_group(update, context=None):
     if update.effective_chat.type not in ["group", "supergroup"]:
@@ -593,10 +585,7 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     text = update.message.text.lower() if update.message.text else ""
     user = update.message.from_user
-
-    # ❌ REMOVE THIS (DO NOT DELETE USER MSG)
-    # asyncio.create_task(auto_delete(update.message))
-
+    
     # ADMIN CHECK
     if await is_admin(update, context):
         return
@@ -623,9 +612,6 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 msg = await update.message.reply_animation(content["value"])
             else:
                 return
-
-            asyncio.create_task(auto_delete(msg))
-            return
 
 # ================= NEWS SYSTEM =================    
 
@@ -717,7 +703,6 @@ async def alert_on_cmd(update, context):
         json.dump(data, f)
 
     msg = await update.message.reply_text("✅ Alert ENABLED")
-    asyncio.create_task(auto_delete(msg))
 
 
 async def alert_off_cmd(update, context):
@@ -733,7 +718,6 @@ async def alert_off_cmd(update, context):
         json.dump(data, f)
 
     msg = await update.message.reply_text("❌ Alert DISABLED")
-    asyncio.create_task(auto_delete(msg))
 
 async def alert_cmd(update, context):
     if not await is_admin(update, context):
@@ -758,8 +742,6 @@ async def alert_cmd(update, context):
 
     with open("data.json", "w") as f:
         json.dump(data, f)
-
-    asyncio.create_task(auto_delete(msg))
 
 async def news_cmd(update, context):
     if not await is_admin(update, context):
@@ -816,7 +798,6 @@ async def add_filter(update, context):
         json.dump(data, f)
 
     msg2 = await update.message.reply_text(f"✅ Filter '{key}' added")
-    asyncio.create_task(auto_delete(msg2))
 
 async def stop_filter(update, context):
     if not await is_admin(update, context): return
@@ -832,7 +813,6 @@ async def stop_filter(update, context):
             json.dump(data, f)
 
         msg = await update.message.reply_text(f"🛑 Filter '{key}' removed")
-        asyncio.create_task(auto_delete(msg))
 
 async def list_filters(update, context):
     cid = str(update.effective_chat.id)
@@ -843,7 +823,6 @@ async def list_filters(update, context):
 
     txt = "📂 Filters:\n" + "\n".join(f"• {k}" for k in flt)
     msg = await update.message.reply_text(txt)
-    asyncio.create_task(auto_delete(msg))
 
 # ================= STARTUP =================
 async def on_startup(app):
