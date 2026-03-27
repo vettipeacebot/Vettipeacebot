@@ -448,9 +448,7 @@ async def help_cmd(update, context):
             "━━━━━━━━━━━━━━━\n"
             "⚙️ **மற்ற அம்சங்கள்**\n"
             "• Auto delete messages\n"
-            "• கெட்ட வார்த்தைகள் தடை\n"
             "• PM/DM தடை அமைப்பு\n"
-            "• Admin tag system (@admin)\n\n"
 
             "🚀 _மேலும் அம்சங்கள் விரைவில் வரும்..._"
         )
@@ -475,9 +473,7 @@ async def help_cmd(update, context):
             "━━━━━━━━━━━━━━━\n"
             "⚙️ **Other Features**\n"
             "• Auto delete messages\n"
-            "• Bad word protection\n"
             "• PM/DM block system\n"
-            "• Admin tag system (@admin)\n\n"
 
             "🚀 _More features coming soon..._"
         )
@@ -580,22 +576,6 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # ADMIN CHECK
     if await is_admin(update, context):
-        return
-
-    # 🔥 ADMIN TAG (NO DELETE)
-    if "@admin" in text:
-        try:
-            admins = await context.bot.get_chat_administrators(update.effective_chat.id)
-            tag = f"🚨 {get_username(user)} needs ADMIN!\n\n"
-
-            for a in admins:
-                if not a.user.is_bot and a.user.username:
-                    tag += f"@{a.user.username} "
-
-            msg = await update.message.reply_text(tag)
-            asyncio.create_task(auto_delete(msg))
-        except:
-            pass
         return
 
     # PM BLOCK
