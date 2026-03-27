@@ -754,8 +754,7 @@ def main():
 
     # 🔥 CALLBACK HANDLERS
     app.add_handler(CallbackQueryHandler(back_menu, pattern="^back$"))
-    app.add_handler(CallbackQueryHandler(remove_warn_btn, pattern="^rw_"))
-    app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
+ app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
 
     # 🔥 AUTO SAVE GROUP WHEN BOT ADDED
