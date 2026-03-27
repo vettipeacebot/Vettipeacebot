@@ -565,7 +565,7 @@ async def group_alert_task(app):
 
             try:
                 msg = await app.bot.send_message(int(cid), ALERT_MSG)
-                asyncio.create_task(auto_delete(msg))
+                asyncio.create_task(auto_delete(msg, ALERT_DELETE_AFTER))
                 LAST_ALERT[cid] = now
             except:
                 continue
@@ -659,10 +659,15 @@ async def send_news(app, entry):
             continue
 
         try:
-            await app.bot.send_message(
-                chat_id=int(cid),
-                text=msg,
-                disable_web_page_preview=False
+            msg_obj = await app.bot.send_message(
+    chat_id=int(cid),
+    text=msg,
+    disable_web_page_preview=False
+)
+
+asyncio.create_task(auto_delete(msg_obj, NEWS_DELETE_AFTER))
+
+asyncio.create_task(auto_delete(msg_obj, NEWS_DELETE_AFTER))
             )
         except:
             pass
