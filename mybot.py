@@ -1,4 +1,4 @@
-print("🚀 SECURITY BOT V12 ULTRA LOADED")
+print("SECURITY BOT V12 ULTRA LOADED")
 
 import os
 import json
