@@ -44,8 +44,8 @@ ALERT_DELETE_AFTER = 58
 
 # ================= NEWS CONFIG =================
 NEWS_INTERVAL = 3600
-BREAKING_INTERVAL = 1800
-NEWS_DELETE_AFTER = 86400
+BREAKING_INTERVAL = 120
+NEWS_DELETE_AFTER = 50
 
 NEWS_FEEDS = [
 
@@ -54,6 +54,14 @@ NEWS_FEEDS = [
 ]
 
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya","message","msg"]
+
+# ================= AUTO DELETE =================
+async def auto_delete(msg, delay):
+    await asyncio.sleep(delay)
+    try:
+        await msg.delete()
+    except:
+        pass
 
 # ================= SAVE GROUP =================
 async def save_group(update, context=None):
@@ -627,7 +635,8 @@ async def get_news():
 
             if hasattr(entry, "published_parsed"):    
                 published = time.mktime(entry.published_parsed)    
-                if time.time() - published > 7200:    
+                if time.time() - published > 86400:
+
                     continue    
 
             return entry    
