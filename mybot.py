@@ -779,9 +779,8 @@ def main():
     app.add_handler(CommandHandler("filters", list_filters))
 
     # 🔥 EVENTS
-       app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
-
+app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
     # 🔥 BACKGROUND TASK
