@@ -865,7 +865,8 @@ def main():
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
-app.add_handler(CommandHandler("news", news_cmd))
+    # 🔥 NEWS COMMAND
+    app.add_handler(CommandHandler("news", news_cmd))
 
     # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
@@ -880,12 +881,9 @@ app.add_handler(CommandHandler("news", news_cmd))
 
     # 🔥 BACKGROUND TASK
     async def start_background(app):
-    async def start_background(app):
-    asyncio.create_task(group_alert_task(app))
-    asyncio.create_task(breaking_news_task(app))  # ⚡
-    asyncio.create_task(hourly_news_task(app))   # ⏱️
-        import asyncio
         asyncio.create_task(group_alert_task(app))
+        asyncio.create_task(breaking_news_task(app))  # ⚡
+        asyncio.create_task(hourly_news_task(app))    # ⏱️
 
     app.post_init = start_background
 
