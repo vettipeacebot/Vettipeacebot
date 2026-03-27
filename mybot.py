@@ -44,12 +44,11 @@ ALERT_DELETE_AFTER = 58
 
 # ================= NEWS CONFIG =================
 NEWS_INTERVAL = 3600
-BREAKING_INTERVAL = 120
-NEWS_DELETE_AFTER = 50
+BREAKING_INTERVAL = 1800
+NEWS_DELETE_AFTER = 86400
 
 NEWS_FEEDS = [
 
-    "https://www.indiatoday.in/rss/home",
     "https://www.dinamalar.com/rss.asp"
 ]
 
