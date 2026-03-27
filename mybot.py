@@ -619,81 +619,79 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(auto_delete(msg))
             return
 
-# ================= NEWS SYSTEM =================
+# ================= NEWS SYSTEM =================    
 
-async def get_news():
-    for url in NEWS_FEEDS:
-        feed = feedparser.parse(url)
+async def get_news():    
+    for url in NEWS_FEEDS:    
+        feed = feedparser.parse(url)    
 
-        for entry in feed.entries:
-            news_id = entry.get("id", entry.link)
+        for entry in feed.entries:    
+            news_id = entry.get("id", entry.link)    
 
-            if news_id in data["posted_news"]:
-                continue
+            if news_id in data["posted_news"]:    
+                continue    
 
-            if hasattr(entry, "published_parsed"):
-                published = time.mktime(entry.published_parsed)
-                if time.time() - published > 7200:
-                    continue
+            if hasattr(entry, "published_parsed"):    
+                published = time.mktime(entry.published_parsed)    
+                if time.time() - published > 7200:    
+                    continue    
 
-            return entry
+            return entry    
 
-    return None
-
-
-async def send_news(app, entry):
-    news_id = entry.get("id", entry.link)
-
-    title = entry.title
-    summary = entry.get("summary", "")[:300]
-
-    msg = f"""🚨 BREAKING NEWS 🚨
-
-📰 {title}
-
-{summary}...
-"""
-
-    for cid in data.get("groups", {}):
-        if not data["news"].get(cid, True):
-            continue
-
-        try:
-            msg_obj = await app.bot.send_message(
-    chat_id=int(cid),
-    text=msg,
-    disable_web_page_preview=False
-)
-
-asyncio.create_task(auto_delete(msg_obj, NEWS_DELETE_AFTER))
-
-asyncio.create_task(auto_delete(msg_obj, NEWS_DELETE_AFTER))
-            )
-        except:
-            pass
-
-    data["posted_news"][news_id] = True
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
+    return None    
 
 
-async def breaking_news_task(app):
-    while True:
-        entry = await get_news()
+async def send_news(app, entry):    
+    news_id = entry.get("id", entry.link)    
 
-        if entry:
-            await send_news(app, entry)
+    title = entry.title    
+    summary = entry.get("summary", "")[:300]    
 
-        await asyncio.sleep(BREAKING_INTERVAL)
+    msg = f"""🚨 BREAKING NEWS 🚨    
+
+📰 {title}    
+
+{summary}...    
+"""    
+
+    for cid in data.get("groups", {}):    
+        if not data["news"].get(cid, True):    
+            continue    
+
+        try:    
+            msg_obj = await app.bot.send_message(    
+                chat_id=int(cid),    
+                text=msg,    
+                disable_web_page_preview=False    
+            )    
+
+            asyncio.create_task(auto_delete(msg_obj, NEWS_DELETE_AFTER))    
+
+        except:    
+            pass    
+
+    data["posted_news"][news_id] = True    
+
+    with open("data.json", "w") as f:    
+        json.dump(data, f)    
 
 
-async def hourly_news_task(app):
-    while True:
-        entry = await get_news()
+async def breaking_news_task(app):    
+    while True:    
+        entry = await get_news()    
 
-        if entry:
-            await send_news(app, entry)
+        if entry:    
+            await send_news(app, entry)    
+
+        await asyncio.sleep(BREAKING_INTERVAL)    
+
+
+async def hourly_news_task(app):    
+    while True:    
+        entry = await get_news()    
+
+        if entry:    
+            await send_news(app, entry)    
 
         await asyncio.sleep(NEWS_INTERVAL)
 
