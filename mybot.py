@@ -43,7 +43,8 @@ DELETE_AFTER = 58   # 58 secs
 
 # ================= NEWS CONFIG =================
 NEWS_INTERVAL = 3600
-BREAKING_INTERVAL = 120
+BREAKING_INTERVAL = 1800
+DELETE_AFTER = 86400   # 86400 secs
 
 NEWS_FEEDS = [
     "http://feeds.bbci.co.uk/news/rss.xml",
