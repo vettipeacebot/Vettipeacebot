@@ -4,6 +4,8 @@ import os
 import json
 import asyncio
 import re
+import feedparser
+import time
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
@@ -22,6 +24,8 @@ if os.path.exists("data.json"):
     data.setdefault("warns", {})
     data.setdefault("filters", {})
     data.setdefault("groups", {})
+    data.setdefault("news", {})
+    data.setdefault("posted_news", {})
 else:
     data = {
         "lang": {},
@@ -36,6 +40,16 @@ LAST_ALERT = {}
 ALERT_MSG = "⚠️📲 Do not share your phone number, photos, location with anyone.\n🍭 Stay safe have fun !"
 ALERT_INTERVAL = 60
 DELETE_AFTER = 58   # 58 secs
+
+# ================= NEWS CONFIG =================
+NEWS_INTERVAL = 3600
+BREAKING_INTERVAL = 120
+
+NEWS_FEEDS = [
+    "http://feeds.bbci.co.uk/news/rss.xml",
+    "https://www.indiatoday.in/rss/home",
+    "https://www.dinamalar.com/rss.asp"
+]
 
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya","message","msg"]
 
@@ -604,6 +618,79 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
             asyncio.create_task(auto_delete(msg))
             return
 
+# ================= NEWS SYSTEM =================
+
+async def get_news():
+    for url in NEWS_FEEDS:
+        feed = feedparser.parse(url)
+
+        for entry in feed.entries:
+            news_id = entry.get("id", entry.link)
+
+            if news_id in data["posted_news"]:
+                continue
+
+            if hasattr(entry, "published_parsed"):
+                published = time.mktime(entry.published_parsed)
+                if time.time() - published > 7200:
+                    continue
+
+            return entry
+
+    return None
+
+
+async def send_news(app, entry):
+    news_id = entry.get("id", entry.link)
+
+    title = entry.title
+    summary = entry.get("summary", "")[:300]
+
+    msg = f"""🚨 BREAKING NEWS 🚨
+
+📰 {title}
+
+{summary}...
+"""
+
+    for cid in data.get("groups", {}):
+        if not data["news"].get(cid, True):
+            continue
+
+        try:
+            await app.bot.send_message(
+                chat_id=int(cid),
+                text=msg,
+                disable_web_page_preview=False
+            )
+        except:
+            pass
+
+    data["posted_news"][news_id] = True
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+
+async def breaking_news_task(app):
+    while True:
+        entry = await get_news()
+
+        if entry:
+            await send_news(app, entry)
+
+        await asyncio.sleep(BREAKING_INTERVAL)
+
+
+async def hourly_news_task(app):
+    while True:
+        entry = await get_news()
+
+        if entry:
+            await send_news(app, entry)
+
+        await asyncio.sleep(NEWS_INTERVAL)
+
 # ================= COMMANDS =================
 async def alert_on_cmd(update, context):
     if not await is_admin(update, context):
@@ -661,6 +748,33 @@ async def alert_cmd(update, context):
         json.dump(data, f)
 
     asyncio.create_task(auto_delete(msg))
+
+async def news_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+
+    cid = str(update.effective_chat.id)
+    data["news"].setdefault(cid, True)
+
+    if not context.args:
+        status = data["news"][cid]
+        return await update.message.reply_text(f"📰 News: {'ON' if status else 'OFF'}")
+
+    arg = context.args[0].lower()
+
+    if arg == "on":
+        data["news"][cid] = True
+        msg = "✅ News ON"
+    elif arg == "off":
+        data["news"][cid] = False
+        msg = "❌ News OFF"
+    else:
+        msg = "Use: /news on /news off"
+
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    await update.message.reply_text(msg)
 
 # ================= FILTER COMMANDS =================
 async def add_filter(update, context):
@@ -751,6 +865,8 @@ def main():
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
+app.add_handler(CommandHandler("news", news_cmd))
+
     # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
@@ -764,6 +880,10 @@ def main():
 
     # 🔥 BACKGROUND TASK
     async def start_background(app):
+    async def start_background(app):
+    asyncio.create_task(group_alert_task(app))
+    asyncio.create_task(breaking_news_task(app))  # ⚡
+    asyncio.create_task(hourly_news_task(app))   # ⏱️
         import asyncio
         asyncio.create_task(group_alert_task(app))
 
