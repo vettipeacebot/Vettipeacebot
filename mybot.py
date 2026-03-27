@@ -38,16 +38,17 @@ LAST_ALERT = {}
 
 # ================= CONFIG =================
 ALERT_MSG = "⚠️📲 Do not share your phone number, photos, location with anyone.\n🍭 Stay safe have fun !"
+
 ALERT_INTERVAL = 60
-DELETE_AFTER = 58   # 58 secs
+ALERT_DELETE_AFTER = 58
 
 # ================= NEWS CONFIG =================
 NEWS_INTERVAL = 3600
 BREAKING_INTERVAL = 1800
-DELETE_AFTER = 86400   # 86400 secs
+NEWS_DELETE_AFTER = 86400
 
 NEWS_FEEDS = [
-    "http://feeds.bbci.co.uk/news/rss.xml",
+
     "https://www.indiatoday.in/rss/home",
     "https://www.dinamalar.com/rss.asp"
 ]
@@ -559,18 +560,25 @@ async def group_alert_task(app):
             if not settings.get("alert", True):
                 continue
 
-            now = asyncio.get_event_loop().time()
+            now = time.time()
+
+            # ⛔ prevent spam (60 sec interval)
             if cid in LAST_ALERT and now - LAST_ALERT[cid] < ALERT_INTERVAL:
                 continue
 
             try:
                 msg = await app.bot.send_message(int(cid), ALERT_MSG)
+
+                # ✅ delete after 58 sec
                 asyncio.create_task(auto_delete(msg, ALERT_DELETE_AFTER))
+
                 LAST_ALERT[cid] = now
+
             except:
                 continue
 
-        await asyncio.sleep(5)
+        # ✅ run every 60 sec (not 5 sec)
+        await asyncio.sleep(60)
 
 # ================= FILTER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
