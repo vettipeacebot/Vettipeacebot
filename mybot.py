@@ -1,4 +1,4 @@
-print("SECURITY BOT V12 ULTRA LOADED")
+print("🚀 SECURITY BOT V12 ULTRA LOADED")
 
 import os
 import json
@@ -6,6 +6,9 @@ import asyncio
 import re
 import feedparser
 import time
+import requests
+from PIL import Image, ImageDraw
+from io import BytesIO
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
@@ -13,6 +16,9 @@ from telegram.ext import (
 )
 
 TOKEN = os.getenv("BOT_TOKEN")
+CRICKET_API_KEY = "YOUR_API_KEY"
+
+LAST_BALL = {}
 
 # ================= DATA =================
 if os.path.exists("data.json"):
@@ -746,6 +752,144 @@ async def hourly_news_task(app):
 
         await asyncio.sleep(NEWS_INTERVAL)
 
+IPL_LOGOS = {
+    "MI": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171871/mumbai-indians.jpg",
+    "CSK": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171870/chennai-super-kings.jpg",
+    "RCB": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171869/royal-challengers-bangalore.jpg",
+    "KKR": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171872/kolkata-knight-riders.jpg",
+    "DC": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171873/delhi-capitals.jpg",
+    "SRH": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171875/sunrisers-hyderabad.jpg",
+    "RR": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171874/rajasthan-royals.jpg",
+    "PBKS": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c171876/kings-xi-punjab.jpg",
+    "GT": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c225641/gujarat-titans.jpg",
+    "LSG": "https://static.cricbuzz.com/a/img/v1/72x54/i1/c225643/lucknow-super-giants.jpg"
+}
+
+def get_team_short(name):
+    name = name.upper()
+    if "MUMBAI" in name: return "MI"
+    if "CHENNAI" in name: return "CSK"
+    if "BANGALORE" in name: return "RCB"
+    if "KOLKATA" in name: return "KKR"
+    if "DELHI" in name: return "DC"
+    if "HYDERABAD" in name: return "SRH"
+    if "RAJASTHAN" in name: return "RR"
+    if "PUNJAB" in name: return "PBKS"
+    if "GUJARAT" in name: return "GT"
+    if "LUCKNOW" in name: return "LSG"
+    return "IPL"
+
+def get_live_matches():
+    url = f"https://api.cricapi.com/v1/currentMatches?apikey={CRICKET_API_KEY}"
+    return requests.get(url).json().get("data", [])
+
+def get_score(match_id):
+    url = f"https://api.cricapi.com/v1/match_scorecard?apikey={CRICKET_API_KEY}&id={match_id}"
+    data = requests.get(url).json()
+
+    try:
+        score = data["data"]["score"][0]
+        return f'{score["r"]}/{score["w"]} ({score["o"]})'
+    except:
+        return "Updating..."
+
+def get_players(match_id):
+    url = f"https://api.cricapi.com/v1/match_scorecard?apikey={CRICKET_API_KEY}&id={match_id}"
+    data = requests.get(url).json()
+
+    try:
+        batter = data["data"]["batting"][0]["batsman"][0]["name"]
+        bowler = data["data"]["bowling"][0]["bowler"][0]["name"]
+        return batter, bowler
+    except:
+        return "N/A", "N/A"
+
+def get_ball_stream(match_id):
+    url = f"https://api.cricapi.com/v1/match_commentary?apikey={CRICKET_API_KEY}&id={match_id}"
+    data = requests.get(url).json()
+
+    try:
+        return [c["text"] for c in data["data"][-6:]]
+    except:
+        return []
+
+def create_score_image(t1, t2, score, status):
+    img = Image.new("RGB", (800, 400), (10, 10, 20))
+    draw = ImageDraw.Draw(img)
+
+    def load_logo(t):
+        try:
+            res = requests.get(IPL_LOGOS.get(t))
+            return Image.open(BytesIO(res.content)).resize((100, 75))
+        except:
+            return None
+
+    l1 = load_logo(t1)
+    l2 = load_logo(t2)
+
+    if l1:
+        img.paste(l1, (50, 50))
+    if l2:
+        img.paste(l2, (650, 50))
+
+    draw.text((200, 80), f"{t1} vs {t2}", fill="white")
+    draw.text((200, 160), score, fill="cyan")
+    draw.text((200, 240), status, fill="orange")
+
+    path = f"{t1}_{t2}.png"
+    img.save(path)
+    return path
+
+async def live_cricket_task(app):
+    while True:
+        matches = get_live_matches()
+
+        for m in matches:
+            match_id = m["id"]
+            name = m["name"]
+            status = m["status"]
+
+            score = get_score(match_id)
+            batter, bowler = get_players(match_id)
+            balls = get_ball_stream(match_id)
+
+            ball_text = "\n".join(balls)
+
+            if LAST_BALL.get(match_id) == ball_text:
+                continue
+
+            LAST_BALL[match_id] = ball_text
+
+            teams = name.split("vs")
+            t1 = get_team_short(teams[0])
+            t2 = get_team_short(teams[1])
+
+            img = create_score_image(t1, t2, score, status)
+
+            text = f"""🏏 {name}
+
+📊 {score}
+📡 {status}
+
+👨‍🏏 {batter}
+🎯 {bowler}
+
+📝 LIVE:
+{ball_text}
+"""
+
+            for cid in data.get("groups", {}):
+                try:
+                    await app.bot.send_photo(
+                        chat_id=int(cid),
+                        photo=open(img, "rb"),
+                        caption=text
+                    )
+                except:
+                    continue
+
+        await asyncio.sleep(10)
+
 # ================= COMMANDS =================
 async def alert_on_cmd(update, context):
     if not await is_admin(update, context):
@@ -888,6 +1032,7 @@ async def on_startup(app):
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
+    asyncio.create_task(live_cricket_task(app))
 
     # 🔥 PM COMMANDS
     app.add_handler(CommandHandler("start", start))
