@@ -52,7 +52,7 @@ BREAKING_INTERVAL = 1800
 NEWS_DELETE = 86400
 
 # ================= AUTO DELETE =================
-async def auto_delete(msg, delay=DELETE_AFTER,NEWS_DELETE):
+async def auto_delete(msg, delay=DELETE_AFTER, NEWS_DELETE=True):
     await asyncio.sleep(delay)
     try:
         await msg.delete()
