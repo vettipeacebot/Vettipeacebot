@@ -837,6 +837,16 @@ async def list_filters(update, context):
 async def on_startup(app):
     asyncio.create_task(group_alert_task(app))
 
+async def on_startup(app):
+    # Start alert task
+    asyncio.create_task(group_alert_task(app))
+    
+    # Start breaking news task
+    asyncio.create_task(breaking_news_task(app))
+    
+    # Start hourly news task
+    asyncio.create_task(hourly_news_task(app))
+
 # ================= MAIN =================
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
