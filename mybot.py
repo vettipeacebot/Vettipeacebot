@@ -847,21 +847,9 @@ def main():
     app.add_handler(CommandHandler("settings", settings_cmd))
 
     # 🔥 CALLBACK HANDLERS (VERY IMPORTANT ORDER)
-
-    # ----------------------
-    # Dedicated Callback Handlers
-    # ----------------------
-
-    # Back Button
     app.add_handler(CallbackQueryHandler(back_menu, pattern="^back$"))
-
-    # Bot Support (dedicated)
     app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
-
-    # Email Support (dedicated)
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
-
-    # Menu Buttons (manage, support, info, lang, help, lang_xx, grp_xxx)
     app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
 
     # 🔥 ALERT COMMANDS
@@ -870,8 +858,7 @@ def main():
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
     # 🔥 NEWS COMMAND
-
-app.add_handler(CommandHandler("news", news_cmd))
+    app.add_handler(CommandHandler("news", news_cmd))
 
     # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
