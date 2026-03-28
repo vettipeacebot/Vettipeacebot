@@ -747,6 +747,35 @@ async def alert_cmd(update, context):
 
     asyncio.create_task(auto_delete(msg))
 
+# ================= NEWS COMMAND =================
+async def news_cmd(update, context):
+    if not await is_admin(update, context):
+        return
+
+    cid = str(update.effective_chat.id)
+    data["news"].setdefault(cid, True)
+
+    if not context.args:
+        status = "ON" if data["news"][cid] else "OFF"
+        msg = await update.message.reply_text(f"📢 News: {status}")
+    else:
+        arg = context.args[0].lower()
+        if arg == "on":
+            data["news"][cid] = True
+            msg = await update.message.reply_text("✅ News ENABLED")
+        elif arg == "off":
+            data["news"][cid] = False
+            msg = await update.message.reply_text("❌ News DISABLED")
+        else:
+            msg = await update.message.reply_text("Use: /news on | /news off")
+
+    # Save changes
+    with open("data.json", "w") as f:
+        json.dump(data, f)
+
+    # Auto-delete message
+    asyncio.create_task(auto_delete(msg))
+
 # ================= FILTER COMMANDS =================
 async def add_filter(update, context):
     if not await is_admin(update, context): return
@@ -839,6 +868,10 @@ def main():
     app.add_handler(CommandHandler("alert", alert_cmd))
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
+
+    # 🔥 NEWS COMMAND
+
+app.add_handler(CommandHandler("news", news_cmd))
 
     # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
