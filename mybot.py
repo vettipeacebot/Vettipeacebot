@@ -964,40 +964,57 @@ async def ipl_cmd(update, context):
 
     await update.message.reply_text(msg)
 
-# ================= BACKGROUND TASKS =================
+# ---------------- BACKGROUND TASKS ----------------
 async def live_cricket_task(app):
     while True:
-        # Your live cricket logic here
-        print("Live cricket update running...")
-        await asyncio.sleep(60)  # run every 60s
+        try:
+            # Example logic using CRICKET_API_KEY
+            print("Live cricket update running...")
+            # Here you would call API using CRICKET_API_KEY
+        except Exception as e:
+            print(f"[ERROR] live_cricket_task: {e}")
+        await asyncio.sleep(60)  # every 60 seconds
 
 async def ipl_live_task(app):
     while True:
-        # Your IPL live logic
-        print("IPL live update running...")
+        try:
+            print("IPL live update running...")
+            # Fetch IPL data here
+        except Exception as e:
+            print(f"[ERROR] ipl_live_task: {e}")
         await asyncio.sleep(60)
 
 async def group_alert_task(app):
     while True:
-        # Your group alert logic
-        print("Group alert running...")
+        try:
+            print("Group alert running...")
+            # Your group alert logic
+        except Exception as e:
+            print(f"[ERROR] group_alert_task: {e}")
         await asyncio.sleep(60)
 
-async def start_background(app):
-    asyncio.create_task(group_alert_task(app))
-    asyncio.create_task(ipl_live_task(app))
-    asyncio.create_task(live_cricket_task(app))  # now it's defined
-    asyncio.create_task(breaking_news_task(app))
-    asyncio.create_task(hourly_news_task(app))
+async def breaking_news_task(app):
+    while True:
+        try:
+            print("Breaking news running...")
+        except Exception as e:
+            print(f"[ERROR] breaking_news_task: {e}")
+        await asyncio.sleep(300)
+
+async def hourly_news_task(app):
+    while True:
+        try:
+            print("Hourly news running...")
+        except Exception as e:
+            print(f"[ERROR] hourly_news_task: {e}")
+        await asyncio.sleep(3600)
 
 # ================= MAIN =================
 def main():
     # Build the bot
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Set the background tasks to start after bot is ready
-    app.post_init = start_background
-
+    
     # 🔥 PM COMMANDS
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
