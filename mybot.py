@@ -744,7 +744,7 @@ async def breaking_news_task(app):
 # ================= HOURLY NEWS TASK =================
 async def hourly_news_task(app):
     while True:
-        for _ in range(3):  # 🔥 send 3 news every hour
+        for _ in range(2):  # 🔥 send 2 news every hour
             entry = await get_news()
 
             if entry:
@@ -888,7 +888,7 @@ async def live_cricket_task(app):
                 except:
                     continue
 
-        await asyncio.sleep(10)
+        await asyncio.sleep(30)
 
 # ================= COMMANDS =================
 async def alert_on_cmd(update, context):
