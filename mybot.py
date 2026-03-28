@@ -6,9 +6,6 @@ import asyncio
 import re
 import feedparser
 import time
-import requests
-from PIL import Image, ImageDraw
-from io import BytesIO
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
