@@ -969,15 +969,21 @@ async def ipl_cmd(update, context):
     await update.message.reply_text(msg)
 
 # ================= STARTUP =================
-async def on_startup(app):
+async def start_background(app):
+    # 🔥 Background tasks using the app
     asyncio.create_task(group_alert_task(app))
-
-asyncio.create_task(ipl_live_task(app))
+    asyncio.create_task(ipl_live_task(app))       # IPL live task
+    asyncio.create_task(live_cricket_task(app))   # Another live cricket task
+    asyncio.create_task(breaking_news_task(app))  # ⚡
+    asyncio.create_task(hourly_news_task(app))    # ⏱️
 
 # ================= MAIN =================
 def main():
+    # Build the bot application
     app = ApplicationBuilder().token(TOKEN).build()
-    asyncio.create_task(live_cricket_task(app))
+
+    # Attach background tasks to run after bot starts
+    app.post_init = start_background
 
     # 🔥 PM COMMANDS
     app.add_handler(CommandHandler("start", start))
@@ -1006,6 +1012,7 @@ def main():
     # 🔥 NEWS COMMAND
     app.add_handler(CommandHandler("news", news_cmd))
 
+    # 🔥 IPL COMMAND
     app.add_handler(CommandHandler("ipl", ipl_cmd))
 
     # 🔥 FILTER COMMANDS
@@ -1019,14 +1026,7 @@ def main():
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
-    # 🔥 BACKGROUND TASK
-    async def start_background(app):
-        asyncio.create_task(group_alert_task(app))
-        asyncio.create_task(breaking_news_task(app))  # ⚡
-        asyncio.create_task(hourly_news_task(app))    # ⏱️
-
-    app.post_init = start_background
-
+    # Start polling
     app.run_polling()
 
 
