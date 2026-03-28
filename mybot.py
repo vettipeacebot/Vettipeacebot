@@ -13,8 +13,7 @@ from telegram.ext import (
 )
 
 TOKEN = os.getenv("BOT_TOKEN")
-CRICKET_API_KEY = "YOUR_API_KEY"
-
+CRICKET_API_KEY = os.getenv("CRICKET_API_KEY")
 LAST_BALL = {}
 
 # ================= DATA =================
