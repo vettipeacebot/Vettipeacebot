@@ -592,7 +592,7 @@ async def send_news(app, entry, breaking=False):
 
         try:
             if image:
-                await app.bot.send_photo(
+                msg = await app.bot.send_photo(
                     chat_id=int(cid),
                     photo=image,
                     caption=caption,
@@ -602,7 +602,7 @@ async def send_news(app, entry, breaking=False):
                     ])
                 )
             else:
-                await app.bot.send_message(
+                msg = await app.bot.send_message(
                     chat_id=int(cid),
                     text=caption,
                     parse_mode="HTML",
@@ -610,6 +610,9 @@ async def send_news(app, entry, breaking=False):
                         [InlineKeyboardButton("⚡ Instant View", url=entry.link)]
                     ])
                 )
+
+            # 🔥 Auto delete after NEWS_DELETE seconds (default 86400 = 24h)
+            asyncio.create_task(auto_delete(msg, delay=NEWS_DELETE))
 
         except Exception as e:
             print("News error:", e)
@@ -620,7 +623,6 @@ async def send_news(app, entry, breaking=False):
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-
 # ================= BREAKING NEWS TASK =================
 async def breaking_news_task(app):
     while True:
@@ -630,8 +632,6 @@ async def breaking_news_task(app):
             await send_news(app, entry, breaking=True)  # 🚨 breaking style
 
         await asyncio.sleep(BREAKING_INTERVAL)
-
-asyncio.create_task(auto_delete(msg))
 
 
 # ================= HOURLY NEWS TASK =================
@@ -644,8 +644,6 @@ async def hourly_news_task(app):
                 await send_news(app, entry, breaking=False)  # 📰 normal style
 
         await asyncio.sleep(NEWS_INTERVAL)
-
-asyncio.create_task(auto_delete(msg))
 
 # ================= FILTER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
