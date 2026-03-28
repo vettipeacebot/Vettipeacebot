@@ -968,21 +968,21 @@ async def ipl_cmd(update, context):
 
     await update.message.reply_text(msg)
 
-# ================= STARTUP =================
+# ================= STARTUP / BACKGROUND TASKS =================
 async def start_background(app):
-    # 🔥 Background tasks using the app
+    # ⚡ All background tasks here
     asyncio.create_task(group_alert_task(app))
-    asyncio.create_task(ipl_live_task(app))       # IPL live task
-    asyncio.create_task(live_cricket_task(app))   # Another live cricket task
-    asyncio.create_task(breaking_news_task(app))  # ⚡
-    asyncio.create_task(hourly_news_task(app))    # ⏱️
+    asyncio.create_task(ipl_live_task(app))
+    asyncio.create_task(live_cricket_task(app))
+    asyncio.create_task(breaking_news_task(app))
+    asyncio.create_task(hourly_news_task(app))
 
 # ================= MAIN =================
 def main():
-    # Build the bot application
+    # Build the bot
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Attach background tasks to run after bot starts
+    # Set the background tasks to start after bot is ready
     app.post_init = start_background
 
     # 🔥 PM COMMANDS
@@ -1026,9 +1026,8 @@ def main():
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
-    # Start polling
+    # Start the bot (async polling)
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
