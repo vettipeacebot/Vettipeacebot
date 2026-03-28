@@ -4,17 +4,15 @@ import os
 import json
 import asyncio
 import re
-import feedparser
+import feedparser  
 import time
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, ContextTypes, CommandHandler,
-    MessageHandler, CallbackQueryHandler, ChatMemberHandler, filters
+    MessageHandler, CallbackQueryHandler, filters
 )
 
 TOKEN = os.getenv("BOT_TOKEN")
-CRICKET_API_KEY = os.getenv("CRICKET_API_KEY")
-LAST_BALL = {}
 
 # ================= DATA =================
 if os.path.exists("data.json"):
@@ -38,41 +36,23 @@ else:
 
 LAST_ALERT = {}
 
-# ================= IPL CONFIG =================
-
-IPL_TEAMS_LOGO = {
-    "MI": "https://path_to_mi_logo.png",
-    "RCB": "https://path_to_rcb_logo.png",
-    "CSK": "https://path_to_csk_logo.png",
-    "KKR": "https://path_to_kkr_logo.png",
-    "RR": "https://path_to_rr_logo.png",
-    "SRH": "https://path_to_srh_logo.png",
-    "DC": "https://path_to_dc_logo.png",
-    "PBKS": "https://path_to_pbks_logo.png",
-    "LSG": "https://path_to_lsg_logo.png",
-    "GT": "https://path_to_gt_logo.png"
-}
-
 # ================= CONFIG =================
 ALERT_MSG = "⚠️📲 Do not share your phone number, photos, location with anyone.\n🍭 Stay safe have fun !"
-
 ALERT_INTERVAL = 60
-ALERT_DELETE_AFTER = 58
+DELETE_AFTER = 58   # 58 secs
 
-# ================= NEWS CONFIG =================
-NEWS_INTERVAL = 3600
-BREAKING_INTERVAL = 1800
-NEWS_DELETE_AFTER = 86400
+PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya"]
 
 NEWS_FEEDS = [
     "https://www.dinamalar.com/rss.asp",
     "https://www.indiatoday.in/rss/1206578"
 ]
-
-PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya","message","msg"]
+NEWS_INTERVAL = 3600
+BREAKING_INTERVAL = 1800
+NEWS_DELETE = 86400
 
 # ================= AUTO DELETE =================
-async def auto_delete(msg, delay):
+async def auto_delete(msg, delay=DELETE_AFTER,NEWS_DELETE):
     await asyncio.sleep(delay)
     try:
         await msg.delete()
@@ -92,23 +72,6 @@ async def save_group(update, context=None):
 
     with open("data.json", "w") as f:
         json.dump(data, f)
-
-# ================= AUTO SAVE GROUP =================
-async def bot_added(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = update.effective_chat
-
-    if chat.type in ["group", "supergroup"]:
-        cid = str(chat.id)
-
-        data["groups"][cid] = {
-            "title": chat.title,
-            "alert": True
-        }
-
-        with open("data.json", "w") as f:
-            json.dump(data, f, indent=4)
-
-        print(f"✅ Group saved: {chat.title} ({cid})")
 
 # ================= ADMIN CHECK =================
 async def is_admin(update, context):
@@ -139,6 +102,23 @@ async def find_user(update, context):
             pass
 
     return None
+
+# ================= WELCOME =================
+async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    for user in update.message.new_chat_members:
+        text = (
+            f"🔱 Welcome to {update.effective_chat.title}!\n"
+            f"👤 Name: {user.first_name}\n"
+            f"💬 Username: {get_username(user)}\n"
+            f"🆔 Group ID: {update.effective_chat.id}\n\n"
+            f"📜 Rules:\n"
+            f"📩 Don't PM/DM others\n"
+            f"🚫 Avoid bad words\n"
+            f"⚠️ Follow admin instructions\n"
+        )
+        msg = await update.message.reply_text(text)
+        asyncio.create_task(auto_delete(msg))
+
 
 # ================= START (PM PANEL) =================
 TEXT = {
@@ -222,57 +202,23 @@ async def manage(update, context):
     q = update.callback_query
     await q.answer()
 
+    uid = q.from_user.id
     buttons = []
 
     for gid, info in data["groups"].items():
-        buttons.append([
-            InlineKeyboardButton(info.get("title", "Unknown"), callback_data=f"grp_{gid}")
-        ])
+        try:
+            admins = await context.bot.get_chat_administrators(int(gid))
+            if uid in [a.user.id for a in admins]:
+                buttons.append([InlineKeyboardButton(info["title"], callback_data=f"grp_{gid}")])
+        except:
+            continue
 
     if not buttons:
-        return await q.edit_message_text("⚠️ No groups saved!")
+        return await q.edit_message_text("⚠️ No groups found!")
 
     buttons.append([InlineKeyboardButton("🔙 Back", callback_data="back")])
 
-    await q.edit_message_text(
-        "Select your group:",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
-
-# ================= GROUP SETTINGS =================
-async def group_settings(update, context, gid):
-    q = update.callback_query
-    await q.answer()
-
-    info = data["groups"].get(gid)
-    if not info:
-        return await q.edit_message_text("❌ Group not found")
-
-    title = info["title"]
-    alert = "ON ✅" if info.get("alert", True) else "OFF ❌"
-
-    text = f"⚙️ Settings for: {title}\n\n🔔 Alert: {alert}"
-
-    buttons = [
-        [InlineKeyboardButton("🔔 Toggle Alert", callback_data=f"toggle_{gid}")],
-        [InlineKeyboardButton("🔙 Back", callback_data="manage")]
-    ]
-
-    await q.edit_message_text(text, reply_markup=InlineKeyboardMarkup(buttons))
-
-# ================= TOGGLE ALERT =================
-async def toggle_alert(update, context):
-    q = update.callback_query
-    await q.answer()
-
-    gid = q.data.split("_")[1]
-
-    data["groups"][gid]["alert"] = not data["groups"][gid].get("alert", True)
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-    await group_settings(update, context, gid)
+    await q.edit_message_text("Select your group:", reply_markup=InlineKeyboardMarkup(buttons))
 
 # ================= SETTINGS COMMAND =================
 async def settings_cmd(update, context):
@@ -462,47 +408,31 @@ async def help_cmd(update, context):
 
     if lang == "ta":
         text = (
-            "📜 **Bot கட்டளைகள் வழிகாட்டி**\n"
-            "_உங்கள் குழுவை எளிதாக நிர்வகிக்க_\n\n"
+            "📜 **Bot கட்டளைகள்**\n\n"
 
-            "━━━━━━━━━━━━━━━\n"
-            "🧠 **Filter System**\n"
-            "• /filter – auto reply சேர்க்க\n"
-            "• /stopfilter – filter நீக்கு\n"
-            "• /filters – அனைத்து filter பட்டியல்\n\n"
+            "🧠 Filter System\n"
+            "• /filter – auto reply\n"
+            "• /filters – பட்டியல்\n\n"
 
-            "━━━━━━━━━━━━━━━\n"
-            "🔔 **Alert System**\n"
-            "• /alert – நிலை பார்க்க\n"
-            "• /alert on – Alert இயக்க\n"
-            "• /alert off – Alert நிறுத்த\n\n"
+            "🔔 Alert System\n"
+            "• /alert on/off\n\n"
 
-            "━━━━━━━━━━━━━━━\n"
-            "⚙️ **மற்ற அம்சங்கள்**\n"
-            "• Auto delete messages\n"
-            "• PM/DM தடை அமைப்பு\n"
-
-            "🚀 _மேலும் அம்சங்கள் விரைவில் வரும்..._"
+            "⚙️ Features\n"
+            "• PM block\n"
         )
-
     else:
         text = (
             "📜 **Bot Commands Guide**\n"
             "_Manage your group like a pro_\n\n"
-
-            "━━━━━━━━━━━━━━━\n"
             "🧠 **Filter System**\n"
             "• /filter – Add auto reply\n"
             "• /stopfilter – Remove filter\n"
             "• /filters – List filters\n\n"
 
-            "━━━━━━━━━━━━━━━\n"
             "🔔 **Alert System**\n"
             "• /alert – Check status\n"
             "• /alert on – Enable alerts\n"
             "• /alert off – Disable alerts\n\n"
-
-            "━━━━━━━━━━━━━━━\n"
             "⚙️ **Other Features**\n"
             "• Auto delete messages\n"
             "• PM/DM block system\n"
@@ -510,6 +440,7 @@ async def help_cmd(update, context):
             "🚀 _More features coming soon..._"
         )
 
+    # ✅ Only keep the Back button
     buttons = [
         [InlineKeyboardButton(TEXT[lang]["back"], callback_data="back")]
     ]
@@ -546,9 +477,6 @@ async def menu(update, context):
         await set_language(update, context, data_cb.split("_")[1])
     elif data_cb == "help":
         await help_cmd(update, context)
-    elif data_cb.startswith("grp_"):
-        gid = data_cb.split("_")[1]
-        await group_settings(update, context, gid)
 
 # ================= BACK =================
 async def back_menu(update, context):
@@ -576,66 +504,18 @@ async def group_alert_task(app):
             if not settings.get("alert", True):
                 continue
 
-            now = time.time()
-
-            # ⛔ prevent spam (60 sec interval)
+            now = asyncio.get_event_loop().time()
             if cid in LAST_ALERT and now - LAST_ALERT[cid] < ALERT_INTERVAL:
                 continue
 
             try:
                 msg = await app.bot.send_message(int(cid), ALERT_MSG)
-
-                # ✅ delete after 58 sec
-                asyncio.create_task(auto_delete(msg, ALERT_DELETE_AFTER))
-
+                asyncio.create_task(auto_delete(msg))
                 LAST_ALERT[cid] = now
-
             except:
                 continue
 
-        # ✅ run every 60 sec (not 5 sec)
-        await asyncio.sleep(60)
-
-# ================= FILTER =================
-async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message:
-        return
-
-    # 🚫 VERY IMPORTANT FIX
-    if update.effective_chat.type == "private":
-        return
-
-    await save_group(update)
-
-    text = update.message.text.lower() if update.message.text else ""
-    user = update.message.from_user
-    
-    # ADMIN CHECK
-    if await is_admin(update, context):
-        return
-
-    # PM BLOCK
-    if any(w in text for w in PM_WORDS):
-        try:
-            await update.message.delete()
-        except:
-            pass
-        return
-   
-    # FILTERS
-    chat_filters = data["filters"].get(str(update.effective_chat.id), {})
-    for key, content in chat_filters.items():
-        if key in text:
-            if content["type"] == "text":
-                msg = await update.message.reply_text(content["value"])
-            elif content["type"] == "sticker":
-                msg = await update.message.reply_sticker(content["value"])
-            elif content["type"] == "video":
-                msg = await update.message.reply_video(content["value"])
-            elif content["type"] == "gif":
-                msg = await update.message.reply_animation(content["value"])
-            else:
-                return
+        await asyncio.sleep(5)
 
 # ================= NEWS SYSTEM =================    
 
@@ -654,15 +534,6 @@ def extract_image(entry):
             return match.group(1)
 
     return None
-
-# ================= IPL LIVE SCORE =================
-import aiohttp
-
-async def get_live_score(match_id):
-    url = f"https://cricapi.com/api/matchScore?apikey={CRICKET_API_KEY}&unique_id={match_id}"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            return await resp.json()
 
 
 # ================= GET NEWS =================
@@ -760,6 +631,8 @@ async def breaking_news_task(app):
 
         await asyncio.sleep(BREAKING_INTERVAL)
 
+asyncio.create_task(auto_delete(msg))
+
 
 # ================= HOURLY NEWS TASK =================
 async def hourly_news_task(app):
@@ -772,35 +645,51 @@ async def hourly_news_task(app):
 
         await asyncio.sleep(NEWS_INTERVAL)
 
-# ================= IPL LIVE UPDATES TASK =================
-async def ipl_live_task(app):
-    while True:
-        if not data.get("ipl", {}).get("enabled", False):
-            await asyncio.sleep(60)
-            continue
+asyncio.create_task(auto_delete(msg))
 
-        for match in data.get("ipl_matches", []):
-            info = await get_live_score(match["id"])
-            
-            msg_text = f"🏏 {info['team-1']} vs {info['team-2']}\n"
-            msg_text += f"Score: {info['score']}\n"
-            msg_text += f"Batter: {info['batsman']}\n"
-            msg_text += f"Bowler: {info['bowler']}\n"
-            msg_text += f"Over: {info['overs']}\n"
+# ================= FILTER =================
+async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message:
+        return
 
-            for cid in data.get("groups", {}):
-                if data.get("ipl", {}).get("live_updates", True):
-                    try:
-                        logo1 = IPL_TEAMS_LOGO.get(info["team-1_code"])
-                        await app.bot.send_photo(
-                            chat_id=int(cid),
-                            photo=logo1,
-                            caption=msg_text
-                        )
-                    except:
-                        await app.bot.send_message(chat_id=int(cid), text=msg_text)
-        
-        await asyncio.sleep(30)  # refresh every 30 seconds
+    # 🚫 VERY IMPORTANT FIX
+    if update.effective_chat.type == "private":
+        return
+
+    await save_group(update)
+
+    text = update.message.text.lower() if update.message.text else ""
+    user = update.message.from_user
+
+    # ADMIN CHECK
+    if await is_admin(update, context):
+        return
+
+    # PM BLOCK
+    if any(w in text for w in PM_WORDS):
+        try:
+            await update.message.delete()
+        except:
+            pass
+        return
+
+    # FILTERS
+    chat_filters = data["filters"].get(str(update.effective_chat.id), {})
+    for key, content in chat_filters.items():
+        if key in text:
+            if content["type"] == "text":
+                msg = await update.message.reply_text(content["value"])
+            elif content["type"] == "sticker":
+                msg = await update.message.reply_sticker(content["value"])
+            elif content["type"] == "video":
+                msg = await update.message.reply_video(content["value"])
+            elif content["type"] == "gif":
+                msg = await update.message.reply_animation(content["value"])
+            else:
+                return
+
+            asyncio.create_task(auto_delete(msg))
+            return
 
 # ================= COMMANDS =================
 async def alert_on_cmd(update, context):
@@ -816,6 +705,7 @@ async def alert_on_cmd(update, context):
         json.dump(data, f)
 
     msg = await update.message.reply_text("✅ Alert ENABLED")
+    asyncio.create_task(auto_delete(msg))
 
 
 async def alert_off_cmd(update, context):
@@ -831,6 +721,7 @@ async def alert_off_cmd(update, context):
         json.dump(data, f)
 
     msg = await update.message.reply_text("❌ Alert DISABLED")
+    asyncio.create_task(auto_delete(msg))
 
 async def alert_cmd(update, context):
     if not await is_admin(update, context):
@@ -856,32 +747,7 @@ async def alert_cmd(update, context):
     with open("data.json", "w") as f:
         json.dump(data, f)
 
-async def news_cmd(update, context):
-    if not await is_admin(update, context):
-        return
-
-    cid = str(update.effective_chat.id)
-    data["news"].setdefault(cid, True)
-
-    if not context.args:
-        status = data["news"][cid]
-        return await update.message.reply_text(f"📰 News: {'ON' if status else 'OFF'}")
-
-    arg = context.args[0].lower()
-
-    if arg == "on":
-        data["news"][cid] = True
-        msg = "✅ News ON"
-    elif arg == "off":
-        data["news"][cid] = False
-        msg = "❌ News OFF"
-    else:
-        msg = "Use: /news on /news off"
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-    await update.message.reply_text(msg)
+    asyncio.create_task(auto_delete(msg))
 
 # ================= FILTER COMMANDS =================
 async def add_filter(update, context):
@@ -911,6 +777,7 @@ async def add_filter(update, context):
         json.dump(data, f)
 
     msg2 = await update.message.reply_text(f"✅ Filter '{key}' added")
+    asyncio.create_task(auto_delete(msg2))
 
 async def stop_filter(update, context):
     if not await is_admin(update, context): return
@@ -926,6 +793,7 @@ async def stop_filter(update, context):
             json.dump(data, f)
 
         msg = await update.message.reply_text(f"🛑 Filter '{key}' removed")
+        asyncio.create_task(auto_delete(msg))
 
 async def list_filters(update, context):
     cid = str(update.effective_chat.id)
@@ -936,102 +804,37 @@ async def list_filters(update, context):
 
     txt = "📂 Filters:\n" + "\n".join(f"• {k}" for k in flt)
     msg = await update.message.reply_text(txt)
+    asyncio.create_task(auto_delete(msg))
 
-# ================= IPL COMMAND =================
-async def ipl_cmd(update, context):
-    if not await is_admin(update, context):
-        return
-
-    arg = context.args[0].lower() if context.args else ""
-    
-    if arg == "on":
-        data["ipl"]["enabled"] = True
-        msg = "✅ IPL System ENABLED"
-    elif arg == "off":
-        data["ipl"]["enabled"] = False
-        msg = "❌ IPL System DISABLED"
-    elif arg == "updates_on":
-        data["ipl"]["live_updates"] = True
-        msg = "⚡ IPL Live Updates ENABLED"
-    elif arg == "updates_off":
-        data["ipl"]["live_updates"] = False
-        msg = "⚡ IPL Live Updates DISABLED"
-    else:
-        msg = "Use: /ipl on/off, /ipl updates_on/off"
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-    await update.message.reply_text(msg)
-
-# ---------------- BACKGROUND TASKS ----------------
-async def live_cricket_task(app):
-    while True:
-        try:
-            # Example logic using CRICKET_API_KEY
-            print("Live cricket update running...")
-            # Here you would call API using CRICKET_API_KEY
-        except Exception as e:
-            print(f"[ERROR] live_cricket_task: {e}")
-        await asyncio.sleep(60)  # every 60 seconds
-
-async def ipl_live_task(app):
-    while True:
-        try:
-            print("IPL live update running...")
-            # Fetch IPL data here
-        except Exception as e:
-            print(f"[ERROR] ipl_live_task: {e}")
-        await asyncio.sleep(60)
-
-async def group_alert_task(app):
-    while True:
-        try:
-            print("Group alert running...")
-            # Your group alert logic
-        except Exception as e:
-            print(f"[ERROR] group_alert_task: {e}")
-        await asyncio.sleep(60)
-
-async def breaking_news_task(app):
-    while True:
-        try:
-            print("Breaking news running...")
-        except Exception as e:
-            print(f"[ERROR] breaking_news_task: {e}")
-        await asyncio.sleep(300)
-
-async def hourly_news_task(app):
-    while True:
-        try:
-            print("Hourly news running...")
-        except Exception as e:
-            print(f"[ERROR] hourly_news_task: {e}")
-        await asyncio.sleep(3600)
+# ================= STARTUP =================
+async def on_startup(app):
+    asyncio.create_task(group_alert_task(app))
 
 # ================= MAIN =================
 def main():
-    # Build the bot
     app = ApplicationBuilder().token(TOKEN).build()
 
-    
     # 🔥 PM COMMANDS
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("settings", settings_cmd))
 
-    # 🔥 CALLBACK HANDLERS
+    # 🔥 CALLBACK HANDLERS (VERY IMPORTANT ORDER)
+
+    # ----------------------
+    # Dedicated Callback Handlers
+    # ----------------------
+
+    # Back Button
     app.add_handler(CallbackQueryHandler(back_menu, pattern="^back$"))
+
+    # Bot Support (dedicated)
     app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
+
+    # Email Support (dedicated)
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
 
-    # 🔥 AUTO SAVE GROUP WHEN BOT ADDED
-    app.add_handler(ChatMemberHandler(bot_added, ChatMemberHandler.MY_CHAT_MEMBER))
-
-    # 🔥 TOGGLE ALERT
-    app.add_handler(CallbackQueryHandler(toggle_alert, pattern="^toggle_"))
-
-    # 🔥 MENU
+    # Menu Buttons (manage, support, info, lang, help, lang_xx, grp_xxx)
     app.add_handler(CallbackQueryHandler(menu, pattern="^(manage|support|info|lang|help|lang_.*|grp_.*)$"))
 
     # 🔥 ALERT COMMANDS
@@ -1039,25 +842,24 @@ def main():
     app.add_handler(CommandHandler("alerton", alert_on_cmd))
     app.add_handler(CommandHandler("alertoff", alert_off_cmd))
 
-    # 🔥 NEWS COMMAND
-    app.add_handler(CommandHandler("news", news_cmd))
-
-    # 🔥 IPL COMMAND
-    app.add_handler(CommandHandler("ipl", ipl_cmd))
-
     # 🔥 FILTER COMMANDS
     app.add_handler(CommandHandler("filter", add_filter))
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
     # 🔥 EVENTS
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+
+    # 🔥 SAVE GROUP DATA (KEEP LAST)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
 
-    # Start the bot (async polling)
-    app.run_polling()
+    app.post_init = on_startup
+
+    app.run_polling(drop_pending_updates=True)
+
 
 if __name__ == "__main__":
     main()
