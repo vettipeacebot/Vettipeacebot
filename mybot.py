@@ -965,12 +965,29 @@ async def ipl_cmd(update, context):
 
     await update.message.reply_text(msg)
 
-# ================= STARTUP / BACKGROUND TASKS =================
+# ================= BACKGROUND TASKS =================
+async def live_cricket_task(app):
+    while True:
+        # Your live cricket logic here
+        print("Live cricket update running...")
+        await asyncio.sleep(60)  # run every 60s
+
+async def ipl_live_task(app):
+    while True:
+        # Your IPL live logic
+        print("IPL live update running...")
+        await asyncio.sleep(60)
+
+async def group_alert_task(app):
+    while True:
+        # Your group alert logic
+        print("Group alert running...")
+        await asyncio.sleep(60)
+
 async def start_background(app):
-    # ⚡ All background tasks here
     asyncio.create_task(group_alert_task(app))
     asyncio.create_task(ipl_live_task(app))
-    asyncio.create_task(live_cricket_task(app))
+    asyncio.create_task(live_cricket_task(app))  # now it's defined
     asyncio.create_task(breaking_news_task(app))
     asyncio.create_task(hourly_news_task(app))
 
