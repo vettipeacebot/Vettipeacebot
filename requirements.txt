@@ -1,4 +1,3 @@
 python-telegram-bot[async]==20.6
 feedparser
-requests
-pillow
+aiohttp
