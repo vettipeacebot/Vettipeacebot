@@ -1,13 +1,8 @@
 {
-  "warns": {},
   "filters": {},
   "alert": {},
   "groups": {},
   "lang": {},
-  "ipl": {
-    "enabled": true,
-    "teams": ["MI", "RCB", "CSK", "KKR", "RR", "SRH", "DC", "PBKS", "LSG", "GT"],
-    "live_updates": true
-  },
-  "ipl_matches": []
+  "news": {},
+  "posted_news": []
 }
