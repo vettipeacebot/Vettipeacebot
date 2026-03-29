@@ -25,7 +25,7 @@ if os.path.exists("data.json"):
     data.setdefault("filters", {})
     data.setdefault("groups", {})
     data.setdefault("news", {})
-    data.setdefault("posted_news", {})
+    data.setdefault("posted_news", [])
 else:
     data = {
         "lang": {},
@@ -38,8 +38,8 @@ LAST_ALERT = {}
 
 # ================= CONFIG =================
 ALERT_MSG = "⚠️📲 Do not share your phone number, photos, location with anyone.\n🍭 Stay safe have fun !"
-ALERT_INTERVAL = 60
-DELETE_AFTER = 58   # 58 secs
+ALERT_INTERVAL = 300
+DELETE_AFTER = 120   # 120 secs
 
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya"]
 
@@ -47,8 +47,8 @@ NEWS_FEEDS = [
     "https://www.dinamalar.com/rss.asp",
     "https://www.indiatoday.in/rss/1206578"
 ]
-NEWS_INTERVAL = 3600
-BREAKING_INTERVAL = 1800
+NEWS_INTERVAL = 7200
+BREAKING_INTERVAL = 3600
 NEWS_DELETE = 86400
 
 # ================= AUTO DELETE =================
@@ -537,6 +537,7 @@ def extract_image(entry):
 
 
 # ================= GET NEWS =================
+
 async def get_news():
     for url in NEWS_FEEDS:
         feed = feedparser.parse(url)
@@ -544,20 +545,25 @@ async def get_news():
         for entry in feed.entries:
             news_id = entry.get("id", entry.link)
 
-            # ❌ skip already posted
+            # ❌ Skip already posted
             if news_id in data["posted_news"]:
                 continue
 
-            # ❌ skip old news (24h)
+            # ❌ Skip old news (24h)
             if hasattr(entry, "published_parsed"):
                 published = time.mktime(entry.published_parsed)
                 if time.time() - published > 86400:
                     continue
 
+            # ✅ MARK IMMEDIATELY (IMPORTANT FIX)
+            data["posted_news"].append(news_id)
+
+            with open("data.json", "w") as f:
+                json.dump(data, f)
+
             return entry
 
     return None
-
 
 # ================= SEND NEWS =================
 async def send_news(app, entry, breaking=False):
@@ -567,7 +573,7 @@ async def send_news(app, entry, breaking=False):
     summary_raw = entry.get("summary", "")
 
     # ✅ clean + limit summary
-    summary = clean_html(summary_raw)[:300]
+    summary = clean_html(summary_raw)[:500]
 
     image = extract_image(entry)
 
@@ -617,12 +623,6 @@ async def send_news(app, entry, breaking=False):
         except Exception as e:
             print("News error:", e)
 
-    # ✅ mark as posted
-    data["posted_news"][news_id] = True
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
 # ================= BREAKING NEWS TASK =================
 async def breaking_news_task(app):
     while True:
@@ -659,17 +659,16 @@ async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower() if update.message.text else ""
     user = update.message.from_user
 
-    # ADMIN CHECK
-    if await is_admin(update, context):
-        return
+    isAdmin = await is_admin(update, context)
 
     # PM BLOCK
     if any(w in text for w in PM_WORDS):
-        try:
-            await update.message.delete()
-        except:
-            pass
-        return
+        if not isAdmin:   # admins won't be blocked
+            try:
+                await update.message.delete()
+            except:
+                pass
+            return
 
     # FILTERS
     chat_filters = data["filters"].get(str(update.effective_chat.id), {})
