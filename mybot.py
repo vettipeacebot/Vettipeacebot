@@ -19,19 +19,20 @@ if os.path.exists("data.json"):
     with open("data.json", "r") as f:
         data = json.load(f)
 
-    # ✅ FIX missing keys
+    # ✅ FIX missing keys (CORRECT TYPES)
     data.setdefault("lang", {})
-    data.setdefault("warns", {})
     data.setdefault("filters", {})
     data.setdefault("groups", {})
     data.setdefault("news", {})
-    data.setdefault("posted_news", {})
+    data.setdefault("posted_news", [])   # ✅ FIXED (was {} ❌)
+
 else:
     data = {
         "lang": {},
-        "warns": {},
         "filters": {},
-        "groups": {}
+        "groups": {},
+        "news": {},
+        "posted_news": []   # ✅ ADD THIS
     }
 
 LAST_ALERT = {}
@@ -44,8 +45,14 @@ DELETE_AFTER = 120   # 120 secs
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya"]
 
 NEWS_FEEDS = [
-    "https://www.dinamalar.com/rss.asp",
-    "https://www.indiatoday.in/rss/1206578"
+    # 🇮🇳 India / Tamil
+    "https://polimernews.com/feed",
+    "https://www.indiatoday.in/rss/1206578",
+    "https://feeds.bbci.co.uk/tamil/rss.xml",
+
+    # 🌍 International
+    "https://rss.cnn.com/rss/edition.rss",
+    "https://feeds.skynews.com/feeds/rss/world.xml"
 ]
 NEWS_INTERVAL = 7200
 BREAKING_INTERVAL = 3600
@@ -535,6 +542,12 @@ def extract_image(entry):
 
     return None
 
+KEYWORDS = {
+    "crime": ["murder", "arrest", "police", "crime"],
+    "politics": ["minister", "government", "election"],
+    "cinema": ["movie", "actor", "actress", "film"],
+    "breaking": ["breaking", "urgent", "alert"]
+}
 
 # ================= GET NEWS =================
 
@@ -546,16 +559,30 @@ async def get_news():
             news_id = entry.get("id", entry.link)
 
             # ❌ Skip already posted
-            if news_id in data["posted_news"]:
+            if news_id in data.get("posted_news", []):
                 continue
 
             # ❌ Skip old news (24h)
-            if hasattr(entry, "published_parsed"):
+            if hasattr(entry, "published_parsed") and entry.published_parsed:
                 published = time.mktime(entry.published_parsed)
                 if time.time() - published > 86400:
                     continue
 
-            # ✅ MARK IMMEDIATELY (IMPORTANT FIX)
+            # 🔥 CATEGORY DETECTION
+            title_lower = entry.title.lower()
+            category = "general"
+
+            for cat, words in KEYWORDS.items():
+                if any(word in title_lower for word in words):
+                    category = cat
+                    break
+
+            entry.category = category
+
+            # ✅ MARK IMMEDIATELY (FIX CRASH SAFE)
+            if not isinstance(data.get("posted_news"), list):
+                data["posted_news"] = []
+
             data["posted_news"].append(news_id)
 
             with open("data.json", "w") as f:
@@ -567,8 +594,6 @@ async def get_news():
 
 # ================= SEND NEWS =================
 async def send_news(app, entry, breaking=False):
-    news_id = entry.get("id", entry.link)
-
     title = entry.title
     summary_raw = entry.get("summary", "")
 
@@ -577,7 +602,20 @@ async def send_news(app, entry, breaking=False):
 
     image = extract_image(entry)
 
-    if breaking:
+    # 🎨 CATEGORY EMOJI MAP
+    emoji_map = {
+        "crime": "🚔",
+        "politics": "🏛",
+        "cinema": "🎬",
+        "breaking": "🚨",
+        "general": "📰"
+    }
+
+    category = getattr(entry, "category", "general")
+    emoji = emoji_map.get(category, "📰")
+
+    # 🔥 Stylish Caption
+    if breaking or category == "breaking":
         caption = f"""🚨 <b>BREAKING NEWS</b>
 
 📰 <b>{title}</b>
@@ -585,15 +623,15 @@ async def send_news(app, entry, breaking=False):
 {summary}...
 """
     else:
-        caption = f"""📰 <b>NEWS UPDATE</b>
+        caption = f"""{emoji} <b>{category.upper()} NEWS</b>
 
-<b>{title}</b>
+📰 <b>{title}</b>
 
 {summary}...
 """
 
     for cid in data.get("groups", {}):
-        if not data["news"].get(cid, True):
+        if not data.get("news", {}).get(cid, True):
             continue
 
         try:
@@ -617,7 +655,6 @@ async def send_news(app, entry, breaking=False):
                     ])
                 )
 
-            # 🔥 Auto delete after NEWS_DELETE seconds (default 86400 = 24h)
             asyncio.create_task(auto_delete(msg, delay=NEWS_DELETE))
 
         except Exception as e:
