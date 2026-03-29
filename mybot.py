@@ -25,7 +25,7 @@ if os.path.exists("data.json"):
     data.setdefault("filters", {})
     data.setdefault("groups", {})
     data.setdefault("news", {})
-    data.setdefault("posted_news", [])
+    data.setdefault("posted_news", {})
 else:
     data = {
         "lang": {},
