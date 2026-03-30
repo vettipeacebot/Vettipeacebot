@@ -524,6 +524,25 @@ def extract_image(entry):
 
     return None
 
+# ================= NEWS KEYWORDS =================
+KEYWORDS = {
+    "crime": [
+        "murder", "arrest", "police", "crime", "attack",
+        "கொலை", "கைது", "போலீஸ்"
+    ],
+    "politics": [
+        "minister", "government", "election", "cm", "pm",
+        "அரசு", "முதல்வர்", "தேர்தல்"
+    ],
+    "cinema": [
+        "movie", "film", "actor", "actress", "release",
+        "சினிமா", "நடிகர்", "படம்"
+    ],
+    "breaking": [
+        "breaking", "live", "just in",
+        "அவசரம்", "உடனடி"
+    ]
+}
 
 # ================= GET NEWS =================
 
@@ -856,8 +875,6 @@ async def list_filters(update, context):
     asyncio.create_task(auto_delete(msg))
 
 # ================= STARTUP =================
-async def on_startup(app):
-    asyncio.create_task(group_alert_task(app))
 
 async def on_startup(app):
     # Start alert task
