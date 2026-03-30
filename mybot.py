@@ -45,8 +45,7 @@ DELETE_AFTER = 120   # 120 secs
 PM_WORDS = ["pm","dm","private chat","private message","direct chat","direct message","inbox","add","pvrt","added","addd","adddd","thaniya"]
 
 NEWS_FEEDS = [
-    # 🇮🇳 India / Tamil
-    "https://polimernews.com/feed",
+    # 🇮🇳 India
     "https://www.indiatoday.in/rss/1206578",
     "https://feeds.bbci.co.uk/tamil/rss.xml",
 
@@ -109,23 +108,6 @@ async def find_user(update, context):
             pass
 
     return None
-
-# ================= WELCOME =================
-async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    for user in update.message.new_chat_members:
-        text = (
-            f"🔱 Welcome to {update.effective_chat.title}!\n"
-            f"👤 Name: {user.first_name}\n"
-            f"💬 Username: {get_username(user)}\n"
-            f"🆔 Group ID: {update.effective_chat.id}\n\n"
-            f"📜 Rules:\n"
-            f"📩 Don't PM/DM others\n"
-            f"🚫 Avoid bad words\n"
-            f"⚠️ Follow admin instructions\n"
-        )
-        msg = await update.message.reply_text(text)
-        asyncio.create_task(auto_delete(msg))
-
 
 # ================= START (PM PANEL) =================
 TEXT = {
@@ -542,6 +524,19 @@ def extract_image(entry):
 
     return None
 
+try:
+    msg = await asyncio.wait_for(
+        app.bot.send_message(
+            chat_id=int(cid),
+            text=caption,
+            parse_mode="HTML",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("📖 Read", url=entry.link)]
+            ])
+        ),
+        timeout=10
+    )
+
 KEYWORDS = {
     "crime": ["murder", "arrest", "police", "crime"],
     "politics": ["minister", "government", "election"],
@@ -658,7 +653,16 @@ async def send_news(app, entry, breaking=False):
             asyncio.create_task(auto_delete(msg, delay=NEWS_DELETE))
 
         except Exception as e:
-            print("News error:", e)
+    print("News error:", e)
+
+    err = str(e)
+
+    if "Forbidden" in err or "kicked" in err or "Not enough rights" in err:
+        print(f"❌ Removing bad group {cid}")
+        data["groups"].pop(str(cid), None)
+
+        with open("data.json", "w") as f:
+            json.dump(data, f)
 
 # ================= BREAKING NEWS TASK =================
 async def breaking_news_task(app):
