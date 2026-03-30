@@ -537,13 +537,6 @@ try:
         timeout=10
     )
 
-KEYWORDS = {
-    "crime": ["murder", "arrest", "police", "crime"],
-    "politics": ["minister", "government", "election"],
-    "cinema": ["movie", "actor", "actress", "film"],
-    "breaking": ["breaking", "urgent", "alert"]
-}
-
 # ================= GET NEWS =================
 
 async def get_news():
