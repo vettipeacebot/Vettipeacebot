@@ -606,7 +606,8 @@ async def send_news(app, entry, breaking=False):
 {summary}...
 """
 
-    for cid in data.get("groups", {}):
+    # 🔥 IMPORTANT FIX (safe loop)
+    for cid in list(data.get("groups", {}).keys()):
         if not data.get("news", {}).get(cid, True):
             continue
 
@@ -618,7 +619,7 @@ async def send_news(app, entry, breaking=False):
                     caption=caption,
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("⚡ Instant View", url=entry.link)]
+                        [InlineKeyboardButton("📖 Read", url=entry.link)]
                     ])
                 )
             else:
@@ -627,23 +628,23 @@ async def send_news(app, entry, breaking=False):
                     text=caption,
                     parse_mode="HTML",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("⚡ Instant View", url=entry.link)]
+                        [InlineKeyboardButton("📖 Read", url=entry.link)]
                     ])
                 )
 
             asyncio.create_task(auto_delete(msg, delay=NEWS_DELETE))
 
         except Exception as e:
-    print("News error:", e)
+            print("News error:", e)
 
-    err = str(e)
+            err = str(e)
 
-    if "Forbidden" in err or "kicked" in err or "Not enough rights" in err:
-        print(f"❌ Removing bad group {cid}")
-        data["groups"].pop(str(cid), None)
+            if "Forbidden" in err or "kicked" in err or "Not enough rights" in err:
+                print(f"❌ Removing bad group {cid}")
+                data["groups"].pop(str(cid), None)
 
-        with open("data.json", "w") as f:
-            json.dump(data, f)
+                with open("data.json", "w") as f:
+                    json.dump(data, f)
 
 # ================= BREAKING NEWS TASK =================
 async def breaking_news_task(app):
