@@ -507,7 +507,6 @@ async def group_alert_task(app):
         await asyncio.sleep(5)
 
 # ================= NEWS SYSTEM =================    
-
 # 🔥 CLEAN HTML
 def clean_html(raw_html):
     return re.sub('<.*?>', '', raw_html)
