@@ -878,7 +878,7 @@ def main():
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("settings", settings_cmd))
 
-    # 🔥 CALLBACK HANDLERS (VERY IMPORTANT ORDER)
+    # 🔥 CALLBACK HANDLERS
     app.add_handler(CallbackQueryHandler(back_menu, pattern="^back$"))
     app.add_handler(CallbackQueryHandler(bot_support, pattern="^botsupport$"))
     app.add_handler(CallbackQueryHandler(email_support_callback, pattern="^email_support$"))
@@ -897,10 +897,10 @@ def main():
     app.add_handler(CommandHandler("stopfilter", stop_filter))
     app.add_handler(CommandHandler("filters", list_filters))
 
-    # 🔥 EVENTS
- app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+    # 🔥 EVENTS (FIXED INDENT)
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
-    # 🔥 SAVE GROUP DATA (KEEP LAST)
+    # 🔥 SAVE GROUP DATA
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
 
     print("🔥 SECURITY BOT V12 ULTRA RUNNING 🔥")
