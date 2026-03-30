@@ -507,6 +507,7 @@ async def group_alert_task(app):
         await asyncio.sleep(5)
 
 # ================= NEWS SYSTEM =================    
+
 # 🔥 CLEAN HTML
 def clean_html(raw_html):
     return re.sub('<.*?>', '', raw_html)
@@ -523,18 +524,6 @@ def extract_image(entry):
 
     return None
 
-try:
-    msg = await asyncio.wait_for(
-        app.bot.send_message(
-            chat_id=int(cid),
-            text=caption,
-            parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("📖 Read", url=entry.link)]
-            ])
-        ),
-        timeout=10
-    )
 
 # ================= GET NEWS =================
 
@@ -566,7 +555,7 @@ async def get_news():
 
             entry.category = category
 
-            # ✅ MARK IMMEDIATELY (FIX CRASH SAFE)
+            # ✅ FIX LIST ERROR
             if not isinstance(data.get("posted_news"), list):
                 data["posted_news"] = []
 
@@ -644,6 +633,11 @@ async def send_news(app, entry, breaking=False):
 
             asyncio.create_task(auto_delete(msg, delay=NEWS_DELETE))
 
+try:
+    msg = await asyncio.wait_for(
+        app.bot.send_message(...),
+        timeout=10
+    )
         except Exception as e:
     print("News error:", e)
 
