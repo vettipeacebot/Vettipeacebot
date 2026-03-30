@@ -633,11 +633,6 @@ async def send_news(app, entry, breaking=False):
 
             asyncio.create_task(auto_delete(msg, delay=NEWS_DELETE))
 
-try:
-    msg = await asyncio.wait_for(
-        app.bot.send_message(...),
-        timeout=10
-    )
         except Exception as e:
     print("News error:", e)
 
