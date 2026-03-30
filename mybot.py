@@ -898,8 +898,7 @@ def main():
     app.add_handler(CommandHandler("filters", list_filters))
 
     # 🔥 EVENTS
-    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, welcome))
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
+ app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
 
     # 🔥 SAVE GROUP DATA (KEEP LAST)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, save_group))
