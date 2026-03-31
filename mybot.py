@@ -53,8 +53,8 @@ NEWS_FEEDS = [
     "https://rss.cnn.com/rss/edition.rss",
     "https://feeds.skynews.com/feeds/rss/world.xml"
 ]
-NEWS_INTERVAL = 7200
-BREAKING_INTERVAL = 3600
+NEWS_INTERVAL = 10800
+BREAKING_INTERVAL = 5400
 NEWS_DELETE = 86400
 
 # ================= AUTO DELETE =================
@@ -593,7 +593,7 @@ async def send_news(app, entry, breaking=False):
     summary_raw = entry.get("summary", "")
 
     # ✅ clean + limit summary
-    summary = clean_html(summary_raw)[:500]
+    summary = clean_html(summary_raw)[:300]
 
     image = extract_image(entry)
 
@@ -679,13 +679,12 @@ async def breaking_news_task(app):
 # ================= HOURLY NEWS TASK =================
 async def hourly_news_task(app):
     while True:
-        for _ in range(2):  # 🔥 send 2 news every hour
-            entry = await get_news()
+        entry = await get_news()
 
-            if entry:
-                await send_news(app, entry, breaking=False)  # 📰 normal style
+        if entry:
+            await send_news(app, entry, breaking=False)  # 📰 normal style
 
-        await asyncio.sleep(NEWS_INTERVAL)
+        await asyncio.sleep(NEWS_INTERVAL)  # 10800 seconds = 3 hours
 
 # ================= FILTER =================
 async def filter_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
