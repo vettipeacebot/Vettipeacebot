@@ -816,62 +816,6 @@ async def news_cmd(update, context):
     # Auto-delete message
     asyncio.create_task(auto_delete(msg))
 
-# ================= FILTER COMMANDS =================
-async def add_filter(update, context):
-    if not await is_admin(update, context): return
-    if not context.args: return
-
-    key = context.args[0].lower()
-    msg = update.message.reply_to_message
-    if not msg: return
-
-    if msg.sticker:
-        ftype, val = "sticker", msg.sticker.file_id
-    elif msg.video:
-        ftype, val = "video", msg.video.file_id
-    elif msg.animation:
-        ftype, val = "gif", msg.animation.file_id
-    elif msg.text:
-        ftype, val = "text", msg.text
-    else:
-        return
-
-    cid = str(update.effective_chat.id)
-    data["filters"].setdefault(cid, {})
-    data["filters"][cid][key] = {"type": ftype, "value": val}
-
-    with open("data.json", "w") as f:
-        json.dump(data, f)
-
-    msg2 = await update.message.reply_text(f"✅ Filter '{key}' added")
-    asyncio.create_task(auto_delete(msg2))
-
-async def stop_filter(update, context):
-    if not await is_admin(update, context): return
-    if not context.args: return
-
-    key = context.args[0].lower()
-    cid = str(update.effective_chat.id)
-
-    if key in data["filters"].get(cid, {}):
-        del data["filters"][cid][key]
-
-        with open("data.json", "w") as f:
-            json.dump(data, f)
-
-        msg = await update.message.reply_text(f"🛑 Filter '{key}' removed")
-        asyncio.create_task(auto_delete(msg))
-
-async def list_filters(update, context):
-    cid = str(update.effective_chat.id)
-    flt = data["filters"].get(cid, {})
-
-    if not flt:
-        return await update.message.reply_text("❌ No filters")
-
-    txt = "📂 Filters:\n" + "\n".join(f"• {k}" for k in flt)
-    msg = await update.message.reply_text(txt)
-    asyncio.create_task(auto_delete(msg))
 
 # ================= STARTUP =================
 
@@ -907,11 +851,6 @@ def main():
 
     # 🔥 NEWS COMMAND
     app.add_handler(CommandHandler("news", news_cmd))
-
-    # 🔥 FILTER COMMANDS
-    app.add_handler(CommandHandler("filter", add_filter))
-    app.add_handler(CommandHandler("stopfilter", stop_filter))
-    app.add_handler(CommandHandler("filters", list_filters))
 
     # 🔥 EVENTS (FIXED INDENT)
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, filter_all))
